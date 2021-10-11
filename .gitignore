@@ -7,6 +7,7 @@
 config/
 replays/
 actions/
+matlab/getPath*
 ProjectSettings/ProjectSettings.asset
 ProjectSettings/ProjectVersion.txt
 

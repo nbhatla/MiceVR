@@ -31,9 +31,9 @@ denoiseBallMovement = 1;
 trialTypeStrArr = [];
 
 %%% CHANGE THESE VARS FOR YOUR SETUP PRIOR TO RUNNING %%%
-scenariosFolder = getScenariosFolder();
-actionsFolder = getActionsFolder();
-replaysFolder = getReplaysFolder();
+scenariosFolder = getPathScenariosFolder();
+actionsFolder = getPathActionsFolder();
+replaysFolder = getPathReplaysFolder();
 eyevideosFolder = [pwd '\'];
 
 actLineFormat = getActionLineFormat();
