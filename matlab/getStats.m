@@ -634,7 +634,7 @@ for (worldIdx = 1:length(worldTypes))
             
             res9 = str2double(num2str(round(results(3,3,j) / sum(results(:,3,j)) * 100), 3));
             disp([label9 ' = ' num2str(res9) '% (' num2str(results(3,3,j)) '/' num2str(sum(results(:,3,j))) ')']);
-            totalStraight = sum(results(:,3,j));
+            totalCenter = sum(results(:,3,j));
 
             disp('-----------')
             disp([num2str(round(results(1,1,j) / sum(results(:,1,j)) * 100), 3) '/' ...
@@ -664,7 +664,11 @@ for (worldIdx = 1:length(worldTypes))
                 %else
                 %    normRightSightRate = (observedRightCorrect - expectedRightCorrect) / expectedRightCorrect;
                 %end
-                normLeftSightRate = 0;  % FIX LATER
+                observedLeftCorrect = results(1,1,j);
+                expectedLeftCorrect = results(1,3,j) / sum(results(:,3,j)) * sum(results(:,1,j));
+                normLeftSightRate = (observedLeftCorrect - expectedLeftCorrect) / (totalLeft - expectedLeftCorrect);
+                
+                observedCenterCorrect = results(3,3,j);
             end
             
             graphPad = [graphPad res1 res2 res3 res4 res5 res6 res7 res8 res9];
@@ -795,10 +799,18 @@ for (worldIdx = 1:length(worldTypes))
                 else
                     rExtRate = round(resultsExt(2,2,j) / sum(resultsExt(:,2,j)) * 100);
                     rCatchRate = round(results(2,1,j) / sum(results(:,1,j)) * 100);
-                    extOrBSRate = rExtRate - rCatchRate;
-                    normExtOrBSRate = round(extOrBSRate / (100 - rCatchRate) * 100);
+                    rExtOrBSRate = rExtRate - rCatchRate;
+                    normRightExtOrBSRate = round(rExtOrBSRate / (100 - rCatchRate) * 100);
+                    lExtRate = round(resultsExt(1,1,j) / sum(resultsExt(:,1,j)) * 100);
+                    lCatchRate = round(results(1,1,j) / sum(results(:,1,j)) * 100);
+                    lExtOrBSRate = lExtRate - lCatchRate;
+                    normLeftExtOrBSRate = round(lExtOrBSRate / (100 - lCatchRate) * 100);
+
+                    expectedCenterCorrect = round(results(3,1,j) / sum(results(:,1,j)) * totalCenter);
+                    normCenterCorrectRate = (observedCenterCorrect - expectedCenterCorrect) / (totalCenter - expectedCenterCorrect);
                 end
-                normRightOnlySightRate = normExtOrBSRate / 100;
+                normRightOnlySightRate = normRightExtOrBSRate / 100;
+                normLeftOnlySightRate = normLeftExtOrBSRate / 100;
 
                 % Do chi-squared test, adjusted for the sight rate!
                 %{
@@ -827,12 +839,14 @@ for (worldIdx = 1:length(worldTypes))
             % Summary stats to cut and paste into the sheet
             % BLINDNESS // SIGHT // EXT/BS
             if (strcmp(worldTypesStr{worldIdx}, '3L'))
-                disp(['SUMMARY: ' num2str(leftBlindRate, 3) '//' num2str(round(normLeftSightRate * 100), 3) '//' num2str(extOrBSRate, 3) '//' num2str(normExtOrBSRate, 3)]);
+                disp(['LEFT SUMMARY: ' num2str(leftBlindRate, 3) '//' num2str(round(normLeftSightRate * 100), 3) '//' num2str(extOrBSRate, 3) '//' num2str(normExtOrBSRate, 3)]);
             elseif (strcmp(worldTypesStr{worldIdx}, '3R'))
-                disp(['SUMMARY: ' num2str(rightBlindRate, 3) '//' num2str(round(normRightSightRate * 100), 3) '//' num2str(extOrBSRate, 3) '//' num2str(normExtOrBSRate, 3)]);
+                disp(['RIGHT SUMMARY: ' num2str(rightBlindRate, 3) '//' num2str(round(normRightSightRate * 100), 3) '//' num2str(extOrBSRate, 3) '//' num2str(normExtOrBSRate, 3)]);
             else
-                disp(['SUMMARY: ' num2str(rightBlindRate, 3) '//' num2str(round(normRightSightRate * 100), 3) '//' num2str(extOrBSRate, 3) '//' num2str(normExtOrBSRate, 3)]);
-            end    
+                disp(['LEFT SUMMARY: ' num2str(leftBlindRate, 3) '//' num2str(round(normLeftSightRate * 100), 3) '//' num2str(lExtOrBSRate, 3) '//' num2str(normLeftExtOrBSRate, 3)]);
+                disp(['CENTER SUMMARY: ' num2str(round(observedCenterCorrect / totalCenter * 100)) '//' num2str(round(normCenterCorrectRate * 100), 3)]);
+                disp(['RIGHT SUMMARY: ' num2str(rightBlindRate, 3) '//' num2str(round(normRightSightRate * 100), 3) '//' num2str(rExtOrBSRate, 3) '//' num2str(normRightExtOrBSRate, 3)]);
+            end
             disp('===========')
         end
         
