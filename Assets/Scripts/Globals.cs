@@ -1043,13 +1043,35 @@ public static class Globals
 		return worldSeen;
 	}
 
-	// Only enter a correction trial if correction is enabled and last trial was incorrect AND last trial was not the location of the probes AND last trial was not a catch trial
+	// Only enter a correction trial if correction is enabled and last trial was incorrect AND last trial was not the location of the probes AND last trial was not a catch trial AND last trial was not an intermittent opto trial
 	public static bool CurrentlyCorrectionTrial() {
-		if (correctionTrialsEnabled && lastTrialWasIncorrect &&
-			((optoSide == optoOff && !GetCurrentWorld().probeIdx.Contains (targetIdx [firstTurnLoc.Count - 1])) || 
-				(optoSide != optoOff && (optoStates[firstTurnLoc.Count - 1] == optoOff || (Globals.probeWorldIdx.Count > 0 && !Globals.probeWorldIdx.Contains(Globals.GetCurrentWorldIdx())) ||
-					(GetCurrentWorld().probeIdx.Count > 0 && !GetCurrentWorld().probeIdx.Contains (targetIdx [firstTurnLoc.Count - 1])))))) { // Must be firstTurnLoc, as additional targets may have been added for the current trial
-			return true;
+		//Debug.Log ("optoTrialsPerBlock=" + optoTrialsPerBlock);
+		//Debug.Log ("blockSize=" + blockSize);
+		//Debug.Log ("optoSide=" + optoSide);
+		//Debug.Log ("optoOff=" + optoOff);
+		//Debug.Log ("current opto state = " + currOptoState);
+		if (correctionTrialsEnabled && lastTrialWasIncorrect) {
+			// If this is not an opto scenario and the last trial wasn't a probe, do a correction trial
+			if ((optoSide == optoOff && !GetCurrentWorld ().probeIdx.Contains (targetIdx [firstTurnLoc.Count - 1]))) {
+				//Debug.Log ("Not opto scenario and last trial wasn't probe, so correction");
+				return true;
+			} 
+			// If the light is ALWAYS ON (PERSISTENT LIGHT) and last one wasn't a probe, do a correction
+			else if (optoTrialsPerBlock > 0 && optoTrialsPerBlock == blockSize &&
+					// AND there are probe worlds specified and the current world is not a probe world
+			         ((Globals.probeWorldIdx.Count > 0 && !Globals.probeWorldIdx.Contains (Globals.GetCurrentWorldIdx ())) ||
+					// OR there are probe trials specified and the last trial wasn't a probe
+			         (GetCurrentWorld ().probeIdx.Count > 0 && !GetCurrentWorld ().probeIdx.Contains (targetIdx [firstTurnLoc.Count - 1])))) {
+				//Debug.Log ("Light is always on and last trial wasn't probe, so correction");
+				return true;
+			} 
+			// If this is an opto session and the light is currently on but not always on (INTERMITTENT LIGHT), do a correction - ignore the probe direction, we will do corrections for all non-light trials on intermittent to reinforce the rule during testing
+			else if (optoTrialsPerBlock > 0 && optoTrialsPerBlock != blockSize && currOptoState == optoOff) {
+				//Debug.Log ("Light was ON but not always, so correction");
+				return true;
+			} else {
+				return false;
+			}
 		} else { 
 			return false;
 		}

@@ -683,7 +683,7 @@ public class GameControlScript : MonoBehaviour
 			
 		// If the last trial was an error and correction trials are enabled in the scenario, just do a redo, unless it was a catch trial!
 		if (Globals.CurrentlyCorrectionTrial ()) {
-			Debug.Log ("in correction trial");
+			Debug.Log ("in CORRECTION trial");
 			idx = Globals.targetIdx [Globals.targetIdx.Count - 1];
 			loc = Globals.targetLoc [Globals.targetLoc.Count - 1];
 			hfreq = Globals.targetHFreq [Globals.targetHFreq.Count - 1];
@@ -1968,7 +1968,8 @@ public class GameControlScript : MonoBehaviour
 
 	private void updateTrialsText() {
 		this.numberOfTrialsText.text = "Trial: #" + Globals.numNonCorrectionTrials.ToString ();
-		if (Globals.CurrentlyCorrectionTrial () && Globals.worldIdxList[Globals.worldIdxList.Count - 1] == Globals.worldIdxList[Globals.worldIdxList.Count - 2])  // Need to make sure current world is same as prev to keep this label up
+		// Globals.numCorrectionTrialsSinceLastCorrectTrial > 0 is a bit of a hack to keept Correction #0 from showing on some trials, but oh well.
+		if (Globals.CurrentlyCorrectionTrial () && Globals.numCorrectionTrialsSinceLastCorrectTrial > 0 && Globals.worldIdxList[Globals.worldIdxList.Count - 1] == Globals.worldIdxList[Globals.worldIdxList.Count - 2])  // Need to make sure current world is same as prev to keep this label up
 			this.numberOfTrialsText.text += " (CORRECTION #" + Globals.numCorrectionTrialsSinceLastCorrectTrial + ")";
 	}
 
