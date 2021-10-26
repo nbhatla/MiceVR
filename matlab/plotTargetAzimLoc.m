@@ -213,6 +213,7 @@ for d_i=1:length(days)  % Iterate through all of the specified days
         
         % Now, just plot based on the replay file
         % Ex line: 20000,0.74,20000;0;-51,-8;,
+        %disp([replaysFolder replaysFileNames{trialsToDo(trialIdx)}]);
         replaysFileID = fopen([replaysFolder replaysFileNames{trialsToDo(trialIdx)}]);
         if (replaysFileID ~= -1)
             repRecs = textscan(replaysFileID, '%f %f %f %f %f %f %f %f', 'Delimiter', {';', ','}); 
