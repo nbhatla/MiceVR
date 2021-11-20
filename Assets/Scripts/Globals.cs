@@ -1045,11 +1045,6 @@ public static class Globals
 
 	// Only enter a correction trial if correction is enabled and last trial was incorrect AND last trial was not the location of the probes AND last trial was not a catch trial AND last trial was not an intermittent opto trial
 	public static bool CurrentlyCorrectionTrial() {
-		//Debug.Log ("optoTrialsPerBlock=" + optoTrialsPerBlock);
-		//Debug.Log ("blockSize=" + blockSize);
-		//Debug.Log ("optoSide=" + optoSide);
-		//Debug.Log ("optoOff=" + optoOff);
-		//Debug.Log ("current opto state = " + currOptoState);
 		if (correctionTrialsEnabled && lastTrialWasIncorrect) {
 			// If this is not an opto scenario and the last trial wasn't a probe, do a correction trial
 			if ((optoSide == optoOff && !GetCurrentWorld ().probeIdx.Contains (targetIdx [firstTurnLoc.Count - 1]))) {
