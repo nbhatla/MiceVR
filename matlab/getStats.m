@@ -16,7 +16,7 @@ function [normLeftSightRate, normRightSightRate, leftBlindRate, rightBlindRate, 
 % sightRate is a rate from 0 to 1 for how often the mouse was sighted on 3-choice, to calculate chance rates on 4-choice
 
 actionsFolderLocal = '.\';
-actionsFolderUCB = 'C:\Users\nikhi\UCB\data-actions\';
+actionsFolderUCB = getPathActionsFolder();
 actionsFolderUCSF = 'C:\Users\nikhi\UCSF\data\';
 
 % X locs of 2-choice, 3-chioce and 4-choice worlds

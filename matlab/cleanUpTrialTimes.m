@@ -30,7 +30,7 @@ allowableDrift = 12;  % the allowable trial difference can be off by this amount
 newTrialStarts = struct([]);
 newTrialEnds = struct([]);
 
-actionsFolder = getActionsFolder();
+actionsFolder = getPathActionsFolder();
 
 % If file no longer exists, it is because it was already analyzed by this script and renamed.  So just return.
 if (~isfile(videoMetadataFileName))
