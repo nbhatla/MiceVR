@@ -23,8 +23,9 @@ fps = 60;
 vrGSdocidFileName = '../config/vrGSdocid.txt';
 DAY = 1;
 
-vidWidth = 200;
-vidHeight = 150;
+binSize = 2;  % Video is shrunk to 640x512
+roiWidth = 208; % We select a small roi within the 640x512 video to save
+roiHeight = 150;
 
 numCams = 2;
 numSlaves = numCams - 1;
@@ -77,23 +78,42 @@ end
 % will be closed and its camera recording will occur on the slave thread.
 vid = cell(numCams,1);
 
+% For some unknown reason, after a reboot the video size is larger than the
+% ROI size for the first run post-reboot, which causes 10x larger file sizes
+% and makes 2 videos, each with a different resolution so it cannot easily be
+% analyzed.  If you do the below, setting the binSize and then the ROI and
+% then deleting the video object, it works fine.  SO DO NOT DELETE
 for i=1:numCams
     vid{i} = videoinput("gentl", i, 'Mono8');
     src = getselectedsource(vid{i});
-    
+
+    if (strcmp(src.DeviceVendorName,'Basler'))
+        src.BinningHorizontal = binSize;
+        src.BinningVertical = binSize;
+        vid{i}.ROIPosition = [220, 181, roiWidth, roiHeight];
+    else
+        vid{i}.ROIPosition = [540, 437, roiWidth, roiHeight];
+    end
+
+    delete(vid{i});
+end
+
+% The normal video setup
+for i=1:numCams
+    vid{i} = videoinput("gentl", i, 'Mono8');
+    src = getselectedsource(vid{i});
+
     vid{i}.FramesPerTrigger = 1;
     vid{i}.LoggingMode = 'disk';
     vid{i}.ReturnedColorspace = 'grayscale';
     vid{i}.TriggerRepeat = Inf;
-    
+
     if (strcmp(src.DeviceVendorName,'Basler'))
-        src.BinningHorizontal = 2;
-        src.BinningVertical = 2;
-        vid{i}.ROIPosition = [220, 181, vidWidth, vidHeight];
+        vid{i}.ROIPosition = [220, 181, roiWidth, roiHeight];
     else
-        vid{i}.ROIPosition = [540, 437, vidWidth, vidHeight];
+        vid{i}.ROIPosition = [540, 437, roiWidth, roiHeight];
     end
-    
+
     src.ExposureTime = 14000;  %15000 might be too fast
     %if src.DeviceVendorName ~= 'Basler'
     %    src.AcquisitionFrameRateMode = 'Off';
@@ -101,14 +121,14 @@ for i=1:numCams
     % Keep this commented OUT, else lots of dropped frames!
     %src.AcquisitionFrameRateMode = 'Basic';  
     %src.AcquisitionFrameRate = 60;
-    
+
     vw = VideoWriter(strcat(vidFileName, '_', num2str(i), '.mp4'), 'MPEG-4');
     vw.FrameRate = 60;
     fps = vw.FrameRate;
     vid{i}.DiskLogger = vw;
-    
+
     vid{i}.TriggerFcn = {'logTrialMarks'};
-    
+
     h = preview(vid{i}); 
     if (i == 2)
         movegui(h, [1570 1720]);
@@ -116,6 +136,7 @@ for i=1:numCams
         %set(h, 'Position', [h.Position(1) h.Position(2) h.Position(3)+vidWidth*1.2 h.Position(4)]);
     end
 end
+
 
 x = input('Press ENTER to stop preview & start PARALLEL recording with hardware trigger');
 
@@ -166,11 +187,9 @@ if (numSlaves > 0)
         v.ReturnedColorspace = 'grayscale';
         v.TriggerRepeat = Inf;
         if (strcmp(src.DeviceVendorName,'Basler'))
-            s.BinningHorizontal = 2;
-            s.BinningVertical = 2;
-            v.ROIPosition = [220, 181, 200, 150];
+            v.ROIPosition = [220, 181, roiWidth, roiHeight];
         else
-            v.ROIPosition = [540, 437, 200, 150];        
+            v.ROIPosition = [540, 437, roiWidth, roiHeight];        
         end
 
         s.ExposureTime = 14000;  %15000 might be too fast
