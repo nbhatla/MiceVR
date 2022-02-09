@@ -1,4 +1,5 @@
-function analyzePupils(mouseName, day, rig, pxPerMm, useCR, useEyeMeasurements)
+function [LeyeKeptL, LeyeKeptLExtinct, LeyeKeptR, LeyeKeptRExtinct, ReyeKeptL, ReyeKeptLExtinct, ReyeKeptR, ReyeKeptRExtinct] = ...
+    analyzePupils(mouseName, day, rig, pxPerMm, useCR, useEyeMeasurements)
 % Once trackPupils is done this script is used to analyze the pupil positions and produce many plots.
 
 % It now also keeps track of eye blink times, based on when the centroid is lost.  This is VERY rough and should be 
@@ -1598,8 +1599,8 @@ disp(['Mean pupil sizes by ellipse major axis: L = ' num2str(round(nanmean(major
                                 num2str(round(nanmean(majorAxisMm(:,1,2)), 2)) ' mm diameter']);
 
 disp(['Mean Rp-L = ' num2str(nanmean(RpL)) ', Rp-R = ' num2str(nanmean(RpR)) ]);                            
-                            
-plotTargetAzimLoc(mouseName, day, [1 0], [], 1, 'L', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
-plotTargetAzimLoc(mouseName, day, [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+
+[neL neR aL aR LeyeKeptL LeyeKeptLExtinct LeyeKeptR LeyeKeptRExtinct] = plotTargetAzimLoc(mouseName, day, [1 0], [], 1, 'L', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+[neL neR aL aR ReyeKeptL ReyeKeptLExtinct ReyeKeptR ReyeKeptRExtinct] = plotTargetAzimLoc(mouseName, day, [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
 
 end

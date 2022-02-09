@@ -30,7 +30,9 @@ sheets = parsed.sheets;
 sheetIDs = [];
 
 for i = 1:length(sheets)
-    if (sheets(i).properties.title(1) ~= '_')  % underscore is used to indicate a metadata sheet, not a mouse
+    if (sheets(i).properties.title(1) ~= '_' && ...
+            ~strcmp(sheets(i).properties.title, upper(sheets(i).properties.title))) 
+            % underscore is used to indicate a metadata sheet, not a mouse
         if (isempty(mouseNames))
             sheetIDs(end+1) = sheets(i).properties.sheetId;
         else

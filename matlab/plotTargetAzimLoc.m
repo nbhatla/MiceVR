@@ -1,4 +1,4 @@
-function [nasalExtremaL, nasalExtremaR, accuracyPerExtremaL, accuracyPerExtremaR] = ... 
+function [nasalExtremaL, nasalExtremaR, accuracyPerExtremaL, accuracyPerExtremaR, keptL, keptLExtinct, keptR, keptRExtinct] = ... 
     plotTargetAzimLoc(mouseName, days, trials, stimLocsToAnalyze, useFieldRestriction, whichEye, ...
     includeCorrectionTrials, includeCatchTrials, includeExtinctionTrials, ...
     targetAzimLimit, fractionOfRun, censorOnlyIfCorrect, outputNewActionsFile, writeOutOnlyIfCensored, ...
@@ -679,10 +679,14 @@ if (~interactive && outputNewActionsFile && newActionsFileID ~= -1)
         modifier = 'censored';
     end
     disp(['Total ' modifier ' trials written to file = ' num2str(sum(totalTrialsAnalyzed))]);
-    disp(['L trials kept = ' num2str(pctAnalyzed(1)*100,2) '% (' num2str(totalTrialsAnalyzed(1)) '/' num2str(totalTrialsAnalyzed(1) + totalTrialsNotAnalyzed(1)) ')']);
-    disp(['L extinction trials kept = ' num2str(pctExtinctAnalyzed(1)*100,2) '% (' num2str(totalExtinctTrialsAnalyzed(1)) '/' num2str(totalExtinctTrialsAnalyzed(1) + totalExtinctTrialsNotAnalyzed(1)) ')']);
-    disp(['R trials kept = ' num2str(pctAnalyzed(2)*100,2) '% (' num2str(totalTrialsAnalyzed(2)) '/' num2str(totalTrialsAnalyzed(2) + totalTrialsNotAnalyzed(2)) ')']);
-    disp(['R extinction trials kept = ' num2str(pctExtinctAnalyzed(2)*100,2) '% (' num2str(totalExtinctTrialsAnalyzed(2)) '/' num2str(totalExtinctTrialsAnalyzed(2) + totalExtinctTrialsNotAnalyzed(2)) ')']);
+    keptL = pctAnalyzed(1)*100;
+    disp(['L trials kept = ' num2str(keptL,2) '% (' num2str(totalTrialsAnalyzed(1)) '/' num2str(totalTrialsAnalyzed(1) + totalTrialsNotAnalyzed(1)) ')']);
+    keptLExtinct = pctExtinctAnalyzed(1)*100;
+    disp(['L extinction trials kept = ' num2str(keptLExtinct,2) '% (' num2str(totalExtinctTrialsAnalyzed(1)) '/' num2str(totalExtinctTrialsAnalyzed(1) + totalExtinctTrialsNotAnalyzed(1)) ')']);
+    keptR = pctExtinctAnalyzed(1)*100;
+    disp(['R trials kept = ' num2str(keptR,2) '% (' num2str(totalTrialsAnalyzed(2)) '/' num2str(totalTrialsAnalyzed(2) + totalTrialsNotAnalyzed(2)) ')']);
+    keptRExtinct = pctExtinctAnalyzed(2)*100;
+    disp(['R extinction trials kept = ' num2str(keptRExtinct, 2) '% (' num2str(totalExtinctTrialsAnalyzed(2)) '/' num2str(totalExtinctTrialsAnalyzed(2) + totalExtinctTrialsNotAnalyzed(2)) ')']);
     disp(['Mean of nasal extrema histograms: L = ' num2str(mean(nasalExtremaL)) ', R = ' num2str(mean(nasalExtremaR))]);
 end
 
