@@ -7,7 +7,12 @@ function sheetIDs = GetSheetIDs(docid, mouseNames, dataSheetsOnly)
 
 % Inspired by GetGoogleSpreadsheet.m
 
-api = 'AIzaSyBsb9u1iSEPKhotq3LSZxeAt-vAk9SrXsI';
+vrGSapiFileName = '../config/vrGSapi.txt';
+if (isfile(vrGSapiFileName))
+    fid = fopen(vrGSapiFileName);
+    api = fgetl(fid);
+end
+
 loginURL = 'https://www.google.com'; 
 dataURL = ['https://sheets.googleapis.com/v4/spreadsheets/' docid '?&fields=sheets.properties&key=' api];
 
