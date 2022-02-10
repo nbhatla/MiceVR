@@ -116,7 +116,9 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     end
     % Wait for all the tracking to finish, then proceed to analyzing the
     % results and recording those results in the Sheet
-    wait(F);
+    if (futureNum > 0)
+        wait(F);
+    end
     for i=1:length(tracking)
         [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
         sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
