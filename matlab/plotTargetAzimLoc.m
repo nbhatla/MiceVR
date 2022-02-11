@@ -287,7 +287,7 @@ for d_i=1:length(days)  % Iterate through all of the specified days
                 end
             end
             
-            % Fourth and finally, adjust the 0 point to be the center of the field of view without assuming
+            % Fourth and finally, adjust the 0 point to be the center of gaze (not the center of the monitor) without assuming
             % the mouse is just staring straight ahead and not moving her eyes.  Use eye tracking data to do this correction.
             % If both bounds were off-screen, since it was corrected to the same value, shifting it won't alter
             % the display in an irreparable way.
