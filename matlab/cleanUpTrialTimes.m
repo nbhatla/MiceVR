@@ -52,11 +52,17 @@ fileTrialStartFrame = 0;
 % Find the actions file in the actions folder.  Remove preceding 0's from dayNum (parts{2}) doing the trick below
 parts = split(videoMetadataFileName, '_');
 actionsFileList = dir([actionsFolder parts{1} '-D' num2str(str2double(parts{2}(1:end-4))) '-*actions.txt']);
+actionsFileList = actionsFileList(~[actionsFileList.isdir]); 
+[~, idx] = sort([actionsFileList.datenum]);
+actionsFileList = actionsFileList(idx);
 
-if (length(actionsFileList) == 1)
-    actionsFileName = [actionsFileList(1).folder '\' actionsFileList(1).name];
+% Sometimes we accidentally reuse the same mouse name, and there are 2 mice
+% with actions files at different times.  For this reason, just take the
+% first (most recent) instead of erroring out.
+if (~isempty(actionsFileList))
+    actionsFileName = [actionsFileList(end).folder '\' actionsFileList(end).name];
 else
-    error('Too many or too few matching actions files in the actions folder');
+    error('No corresponding actions file in the actions folder');
 end
 
 fid = fopen(actionsFileName);

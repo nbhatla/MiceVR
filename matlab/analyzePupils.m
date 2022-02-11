@@ -119,9 +119,15 @@ cleanUpTrialTimes([mouseName '_' dayStr '.mat']);
 numStim = [];
 % Find the actions file in the actions folder.  Remove preceding 0's from dayNum (parts{2}) doing the trick below
 actionsFileList = dir([actionsFolder mouseName '-D' num2str(dayNum) '-*actions.txt']);
+actionsFileList = actionsFileList(~[actionsFileList.isdir]); 
+[~, idx] = sort([actionsFileList.datenum]);
+actionsFileList = actionsFileList(idx);
 
-if (length(actionsFileList) == 1)
-    actionsFileName = [actionsFileList(1).folder '\' actionsFileList(1).name];
+% Sometimes we accidentally reuse the same mouse name, and there are 2 mice
+% with actions files at different times.  For this reason, just take the
+% first (most recent) instead of erroring out.
+if (~isempty(actionsFileList))
+    actionsFileName = [actionsFileList(end).folder '\' actionsFileList(end).name];
     parts = split(actionsFileList(1).name, '-');  % e.g. Kalbi-D104-4_BG_Bl_R_30-S1 or Taro-D117-2L_2R_BG_NoCo-S3
     % Find first numbers after the day, and use that as the numStim - there can be up to 2
     levelName = split(parts{3}, '_');
@@ -131,7 +137,7 @@ if (length(actionsFileList) == 1)
         numStim(2) = str2double(levelName{2}(1));
     end
 else
-    error('Found 0 or 2+ corresponding actions files.  Should only be 1.');
+    error('Found 0 corresponding actions files.');
 end
 
 % Might need to do something smarter if there are multiple worlds (e.g. separate plots)
