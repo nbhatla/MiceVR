@@ -67,8 +67,8 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
             % eye videos, followed by analyzing it, followed by writing the
             % results back to the sheet, prepending the notes.
             lastCompleteTrainingDayStr = '0';
-            lastNasalRestrictStr = '-90';
             lastRow = 0;
+            nasalRestrictStr = '-90';
             padding = '';
             for row=1:size(sheet, 1)
                 trainingDayStr = sheet{row, dayCol};
@@ -84,7 +84,10 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                     end
                 end
             end
-            lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);            
+            lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);
+            if (lastCompleteTrainingDayNum == 0 || exist('lastNasalRestrictStr', 'var') == 0)
+                break;
+            end
             lastNasalRestrictDeg = str2double(lastNasalRestrictStr);
             % Need this to check and see if the video has already been analyzed
             if (lastCompleteTrainingDayNum < 10)
