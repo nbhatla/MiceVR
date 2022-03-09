@@ -138,7 +138,7 @@ for i=1:numCams
 end
 
 
-x = input('Press ENTER to stop preview & start PARALLEL recording with hardware trigger');
+x = input('Press ENTER to stop preview & start PARALLEL recording with hardware trigger', 's');
 
 for i=1:numCams
     stoppreview(vid{i});
@@ -226,7 +226,7 @@ if (numSlaves > 0)
     end
 end
 
-x = input('Press ENTER to stop recording');
+x = input('Press ENTER to stop recording', 's');
 
 framesAcquiredLogged = zeros(1,2);
 stop(vid{1});
