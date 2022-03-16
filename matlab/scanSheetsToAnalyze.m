@@ -120,10 +120,14 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
         wait(F);
     end
     for i=1:length(tracking)
-        [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
-        sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
-        notes = sheet(tracking(i).row, notesCol);
-        mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekr) ' // ' num2str(rekl) '/' num2str(rekr) ' - ' notes{1}]});
+        try
+            [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
+            sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
+            notes = sheet(tracking(i).row, notesCol);
+            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekr) ' // ' num2str(rekl) '/' num2str(rekr) ' - ' notes{1}]});
+        catch ME
+            disp(ME.message);
+        end
     end
 else
     disp('SPREADSHEET CONFIG NOT FOUND.  Are you running from the correct folder?');
