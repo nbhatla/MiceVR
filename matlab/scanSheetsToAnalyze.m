@@ -119,6 +119,19 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     if (futureNum > 0)
         wait(F);
     end
+    % Disp any error message that might have arisen
+    for i=1:length(futureNum)
+        if (length(F(i).Error) > 0)
+            disp(getReport(F(i).Error));
+            disp(['Retrying ' tracking(i).mouseName)]);
+            F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
+        end
+    end
+    % Wait a second time, which hopefully won't error?
+    if (futureNum > 0)
+        wait(F);
+    end
+    
     for i=1:length(tracking)
         [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
         sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);

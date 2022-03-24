@@ -28,7 +28,7 @@ numVideosTracking = 0;
 
 % 6 was the max on my laptop before I got disk IO errors.  Maybe the desktops can do more?  
 % Laptop had 4 physical cores but 8 virtual, but desktop has 6 physical and 6 logical.  So probably 6 is the most.
-maxVideoTracking = 6;  
+maxVideoTracking = 4;  
 numThreads = maxVideoTracking;
 
 futureNum = 0;
@@ -67,8 +67,8 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
             % eye videos, followed by analyzing it, followed by writing the
             % results back to the sheet, prepending the notes.
             lastCompleteTrainingDayStr = '0';
+            lastNasalRestrictStr = '-90';
             lastRow = 0;
-            nasalRestrictStr = '-90';
             padding = '';
             for row=1:size(sheet, 1)
                 trainingDayStr = sheet{row, dayCol};
@@ -84,10 +84,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                     end
                 end
             end
-            lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);
-            if (lastCompleteTrainingDayNum == 0 || exist('lastNasalRestrictStr', 'var') == 0)
-                break;
-            end
+            lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);            
             lastNasalRestrictDeg = str2double(lastNasalRestrictStr);
             % Need this to check and see if the video has already been analyzed
             if (lastCompleteTrainingDayNum < 10)
@@ -122,6 +119,11 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     if (futureNum > 0)
         wait(F);
     end
+    % Disp any error message that might have arisen
+    for i=1:length(futureNum)
+        if (length(F(i).Error
+    end
+    
     for i=1:length(tracking)
         [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
         sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
