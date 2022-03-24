@@ -93,10 +93,10 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                 padding = '0';
             end
             vidFileName = [mouseName '_' padding lastCompleteTrainingDayStr '_1.mp4'];
-            % Sometimes a video might be missing, despite training.  Only continue tracking if it is present.
+            % Sometimes a video might be missing, despite training.  Only tracki if it is present.
             if (isfile(vidFileName))
                 trackedVidFileName = [vidFileName(1:end-6) '_opened_ann.mp4'];
-                % Only continue tracking if the video has not been tracked before
+                % Only track if the video has not been tracked before
                 if (~isfile(trackedVidFileName))
                     % Only track if field restriction is at least n20
                     if (lastNasalRestrictDeg >= 20)
@@ -119,11 +119,11 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     if (futureNum > 0)
         wait(F);
     end
-    % Disp any error message that might have arisen
+    % Disp any error message that might have arisen, and retry the tracking
     for i=1:length(futureNum)
-        if (length(F(i).Error) > 0)
+        if (~isempty(F(i).Error))
             disp(getReport(F(i).Error));
-            disp(['Retrying ' tracking(i).mouseName)]);
+            disp(['Retrying ' tracking(i).mouseName]);
             F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
         end
     end
@@ -131,7 +131,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     if (futureNum > 0)
         wait(F);
     end
-    
+    % Finally, analyze!
     for i=1:length(tracking)
         try
             [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
