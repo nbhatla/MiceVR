@@ -118,16 +118,16 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     % results and recording those results in the Sheet
     if (futureNum > 0)
         wait(F);
-    end
-    % Disp any error message that might have arisen, and retry the tracking
-    for i=1:length(futureNum)
-        if (~isempty(F(i).Error))
-            disp(getReport(F(i).Error));
-            disp(['Retrying ' tracking(i).mouseName]);
-            F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
+        % Disp any error message that might have arisen, and retry the tracking
+        for i=1:length(futureNum)
+            if (~isempty(F(i).Error))
+                disp(getReport(F(i).Error));
+                disp(['Retrying ' tracking(i).mouseName]);
+                F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
+            end
         end
     end
-    % Wait a second time, which hopefully won't error?
+    % Wait a second time, which hopefully won't error again?
     if (futureNum > 0)
         wait(F);
     end
