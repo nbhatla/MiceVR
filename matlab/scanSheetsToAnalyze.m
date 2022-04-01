@@ -119,7 +119,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
     if (futureNum > 0)
         wait(F);
         % Disp any error message that might have arisen, and retry the tracking
-        for i=1:length(futureNum)
+        for i=1:length(F)
             if (~isempty(F(i).Error))
                 disp(getReport(F(i).Error));
                 disp(['Retrying ' tracking(i).mouseName]);
