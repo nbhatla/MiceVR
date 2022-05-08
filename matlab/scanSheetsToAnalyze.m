@@ -28,7 +28,7 @@ numVideosTracking = 0;
 
 % 6 was the max on my laptop before I got disk IO errors.  Maybe the desktops can do more?  
 % Laptop had 4 physical cores but 8 virtual, but desktop has 6 physical and 6 logical.  So probably 6 is the most.
-maxVideoTracking = 4;  
+maxVideoTracking = 4;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
 numThreads = maxVideoTracking;
 
 futureNum = 0;
@@ -95,9 +95,9 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
             vidFileName = [mouseName '_' padding lastCompleteTrainingDayStr '_1.mp4'];
             % Sometimes a video might be missing, despite training.  Only tracki if it is present.
             if (isfile(vidFileName))
-                trackedVidFileName = [vidFileName(1:end-6) '_opened_ann.mp4'];
+                trackingComplete = [vidFileName(1:end-6) '_trk.mat']; % instead of _opened_ann.mp4, because the video file might be incomplete whereas the trk file is only written when complete!
                 % Only track if the video has not been tracked before
-                if (~isfile(trackedVidFileName))
+                if (~isfile(trackingComplete))
                     % Only track if field restriction is at least n20
                     if (lastNasalRestrictDeg >= 20)
                         % Use parfeval and it will handle all the queueing, better than spmd
@@ -115,36 +115,45 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
         end
     end
     % Wait for all the tracking to finish, then proceed to analyzing the
-    % results and recording those results in the Sheet
-    if (futureNum > 0)
-        wait(F);
-        % Disp any error message that might have arisen, and retry the tracking
-        for i=1:length(F)
-            if (~isempty(F(i).Error))
-                disp(getReport(F(i).Error));
-                disp(['Retrying ' tracking(i).mouseName]);
-                F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
+    % results and recording those results in the Sheet.  Keep retrying
+    % until there are no more errors!
+    
+    % Bit vector keeping track of whether a tracking has been analyzed or not
+    analyzedFuture = zeros(1, futureNum);
+    
+    while (true)
+        noErrors = true;
+        if (futureNum > 0)
+            wait(F);
+            % Disp any error message that might have arisen, and retry the tracking
+            for i=1:length(F)
+                if (~isempty(F(i).Error))
+                    noErrors = false;
+                    disp(getReport(F(i).Error));
+                    disp(['Retrying ' tracking(i).mouseName]);
+                    F(i) = parfeval(@trackPupilsAuto, 0, tracking(i).mouseName, tracking(i).day, rigNum, [0.2 0.2]);
+                else % analyze here instead of later, so we can get results even if some are erroring
+                    if (analyzedFuture(i) == 0)  % Check bit vector to see if this video has already been analyzed
+                        try
+                            disp(['TRACKING RESULTS FOR ' tracking(i).mouseName]);
+                            [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
+                            sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
+                            notes = sheet(tracking(i).row, notesCol);
+                            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekr) ' // ' num2str(rekl) '/' num2str(rekr) ' - ' notes{1}]});
+                            analyzedFuture(i) = 1;
+                        catch ME
+                            disp(ME.message);
+                        end
+                    end
+                end
             end
         end
-    end
-    % Wait a second time, which hopefully won't error again?
-    if (futureNum > 0)
-        wait(F);
-    end
-    % Finally, analyze!
-    for i=1:length(tracking)
-        try
-            [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
-            sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
-            notes = sheet(tracking(i).row, notesCol);
-            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekr) ' // ' num2str(rekl) '/' num2str(rekr) ' - ' notes{1}]});
-        catch ME
-            disp(ME.message);
+        if (noErrors)
+            break;
         end
-    end
+    end    
 else
     disp('SPREADSHEET CONFIG NOT FOUND.  Are you running from the correct folder?');
 end
-
 
 end
