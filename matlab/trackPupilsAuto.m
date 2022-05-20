@@ -141,10 +141,8 @@ candRightEyeMovements = rightEyeFractions(candRightIdx, 1);
 minRightIdx = candRightIdx(find(candRightEyeMovements == min(candRightEyeMovements), 1));
 rightOtsuWeight = (minRightIdx - 1) * stepSize + startingOtsuWeights(2);
 
-if (isempty(leftOtsuWeight))
-    disp ([vFileName ': Could not find otsu weight that gave suitable tracking for left eye. Please check the raw video.']);
-elseif  (isempty(rightOtsuWeight))
-    disp ([vFileName ': Could not find otsu weight that gave suitable tracking for right eye. Please check the raw video.']);    
+if (isempty(leftOtsuWeight) && isempty(rightOtsuWeight))
+    disp ([vFileName ': Could not find otsu weight for either eye that gave suitable tracking. Please check the raw video.']);
 else
     disp (['Starting tracking of entire videos with otsuWeights = [' num2str(leftOtsuWeight) ' ' num2str(rightOtsuWeight)]);
     trackPupils(vFileName, vLeftNum, vRightNum, frameLimFull, [leftOtsuWeight rightOtsuWeight], crPresent);
