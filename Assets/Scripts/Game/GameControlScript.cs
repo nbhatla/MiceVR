@@ -331,6 +331,10 @@ public class GameControlScript : MonoBehaviour
 				Globals.rewardAmountSoFar += Globals.rewardSize;
 				updateRewardAmountText ();
 				Debug.Log ("gave reward = " + Globals.rewardAmountSoFar);
+			} else if (Input.GetKeyUp (KeyCode.F)) {
+				int flushDur = Globals.rewardDur * 1000;
+				this.udpSender.SendWaterReward (flushDur);  // Should flush line about 40 ml
+				Debug.Log ("Flushing line, opening for " + flushDur / 1000 / 60 + " min" );
 			} else if (Input.GetKeyUp (KeyCode.T)) {
 				TeleportToBeginning ();
 			} else if (Input.GetKeyUp (KeyCode.B)) {

@@ -795,16 +795,28 @@ for (worldIdx = 1:length(worldTypes))
                     extOrBSRate = round((round(resultsExt(1,1,j) / sum(resultsExt(:,1,j)) * 100) - round(results(1,1,j) / sum(results(:,1,j)) * 100) ...
                                     + round(resultsExt(2,2,j) / sum(resultsExt(:,2,j)) * 100) - round(results(2,1,j) / sum(results(:,1,j)) * 100))/2);
                     % the below might be wrong - investigate if get fishy answers
-                    normExtOrBSRate = round(extOrBSRate / (100 - (round(sum(results(1:2,1,j)) / (2*sum(results(:,1,j)))*100))) * 100);
+                    if (extOrBSRate > 0)
+                        normExtOrBSRate = round(extOrBSRate / (100 - (round(sum(results(1:2,1,j)) / (2*sum(results(:,1,j)))*100))) * 100);
+                    else
+                        normExtOrBSRate = round(extOrBSRate / (round(sum(results(1:2,1,j) / (2*sum(results(:,1,j)))*100))) * 100);
+                    end
                 else
                     rExtRate = round(resultsExt(2,2,j) / sum(resultsExt(:,2,j)) * 100);
                     rCatchRate = round(results(2,1,j) / sum(results(:,1,j)) * 100);
                     rExtOrBSRate = rExtRate - rCatchRate;
-                    normRightExtOrBSRate = round(rExtOrBSRate / (100 - rCatchRate) * 100);
+                    if (rExtOrBSRate >= 0)
+                        normRightExtOrBSRate = round(rExtOrBSRate / (100 - rCatchRate) * 100);
+                    else
+                        normRightExtOrBSRate = round(rExtOrBSRate / rCatchRate * 100);                        
+                    end
                     lExtRate = round(resultsExt(1,1,j) / sum(resultsExt(:,1,j)) * 100);
                     lCatchRate = round(results(1,1,j) / sum(results(:,1,j)) * 100);
                     lExtOrBSRate = lExtRate - lCatchRate;
-                    normLeftExtOrBSRate = round(lExtOrBSRate / (100 - lCatchRate) * 100);
+                    if (lExtOrBSRate >= 0)
+                        normLeftExtOrBSRate = round(lExtOrBSRate / (100 - lCatchRate) * 100);
+                    else
+                        normLeftExtOrBSRate = round(lExtOrBSRate / lCatchRate * 100);                        
+                    end
 
                     expectedCenterCorrect = round(results(3,1,j) / sum(results(:,1,j)) * totalCenter);
                     normCenterCorrectRate = (observedCenterCorrect - expectedCenterCorrect) / (totalCenter - expectedCenterCorrect);
