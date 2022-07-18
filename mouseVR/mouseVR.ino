@@ -110,7 +110,8 @@ void takeAction() {
   if (newData == true) {
     //Serial.println("got new data");
     newData = false;
-    int data = atoi(receivedChars);
+    String receivedStr = String(receivedChars);
+    long data = receivedStr.toInt();
     if ( data == 0 ) {  // sync msg - inherited, not sure what this was used for but it is not currently used
       //Serial.println("Ard:Synced!");
       digitalWrite(syncPin, HIGH);
@@ -143,9 +144,15 @@ void takeAction() {
         startDimTime = millis();          
       }
     } else if (data > 0) {        // Water for data milliseconds
+      Serial.println((unsigned long)data);
       digitalWrite(waterPin, HIGH);
       digitalWrite(ledPin, HIGH);
-      delay(data); // 40ms = 2.8ul, 25ms = ~2 ul
+      long startMillis = millis();
+      while(1) {
+        if (millis() - startMillis > data) break;
+      }
+      // delay doesnt work for longer than 1 minute, so use the while loop above instead.
+      //delay((unsigned int)data); // 40ms = 2.8ul, 25ms = ~2 ul
       digitalWrite(waterPin, LOW);
       digitalWrite(ledPin, LOW);
     }
