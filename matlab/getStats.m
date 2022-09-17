@@ -1119,6 +1119,13 @@ if (sum(sum(sum(results_disc))) > 0)
     end
 end
 
+disp(['Expected ' num2str(length(days)) ' files.']);
 disp(['Analyzed ' num2str(numFilesAnalyzed) ' files.']);
+if (length(days) ~= numFilesAnalyzed)
+    beep
+    disp(['Some data files MISSING?!']);
+else
+    disp (['ALL GOOD']);
+end
 
 end
