@@ -1,5 +1,5 @@
 function [LeyeKeptL, LeyeKeptLExtinct, LeyeKeptR, LeyeKeptRExtinct, ReyeKeptL, ReyeKeptLExtinct, ReyeKeptR, ReyeKeptRExtinct] = ...
-    analyzePupils(mouseName, days, rig, pxPerMm, useCR, useEyeMeasurements)
+    analyzePupils(mouseName, day, rig, pxPerMm, useCR, useEyeMeasurements)
 % Once trackPupils is done this script is used to analyze the pupil positions and produce many plots.
 
 % It now also keeps track of eye blink times, based on when the centroid is lost.  This is VERY rough and should be 
@@ -23,8 +23,6 @@ function [LeyeKeptL, LeyeKeptLExtinct, LeyeKeptR, LeyeKeptRExtinct, ReyeKeptL, R
 
 %leftColor = [1 1 0.79];  % off-yellow
 %rightColor = [0.81 1 0.81];  % off-green
-
-% 2023-01-12 - enable tracking of many days
 
 % OLD ARGUMENTS
 if (day < 10)
@@ -940,10 +938,11 @@ muExt = cell(size(stimEyeMoveTrialsExt));
 semExt = cell(size(stimEyeMoveTrialsExt));
 ySemExt = cell(size(stimEyeMoveTrialsExt));
 
+extraStim = 0;  % used for adding legend entries if extinction trials exist
+
 for eye=1:2  % For each eye
     h = [];
     n = 0;
-    extraStim = 0;  % used for adding legend entries if extinction trials exist
     stimCorrectEyeLengths = [];
     % First collect all the trial lengths for the correct non-extinction trials, to assist with normalizing trial duration
     for stimIdx=1:totalNumStim
@@ -959,7 +958,6 @@ for eye=1:2  % For each eye
         if (~isempty(stimActionEyeMoveTrialsExt{extIdx,extIdx,eye}))
             stimCorrectEyeLengths = [stimCorrectEyeLengths cellfun(@(x) length(x), stimActionEyeMoveTrialsExt{extIdx,extIdx,eye})];
             n = n + length(stimActionEyeMoveTrialsExt{extIdx,extIdx,eye});
-            extraStim = extraStim + 1;
         end
     end
     minLengths(eye) = min(stimCorrectEyeLengths);  % Use min instead of max, as max adds some artifacts at the end, and both give the same shape
@@ -997,7 +995,10 @@ for eye=1:2  % For each eye
     end
 
     figure; hold on;
-    skipLegend = zeros(1,totalNumStim+extraStim);
+    skipLegend = zeros(1,totalNumStim);
+    if (~isempty(ySemExt{extIdx, eye})) 
+        skipLegend = zeros(1,
+    end
     for stimIdx=1:totalNumStim
         if (~isempty(mu{stimIdx,eye}))
             x = 1:length(mu{stimIdx,eye});
@@ -1083,7 +1084,7 @@ for eye=1:2  % For each eye
             alpha(varianceAlpha);
             h = [h plot(mu{stimIdx,eye}, x, 'Color', curColor, 'LineWidth', lw)];
         else
-            skipLegend(stimIdx) = 1;
+            %skipLegend(stimIdx) = 1;
         end
     end
     

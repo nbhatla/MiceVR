@@ -139,7 +139,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                             [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
                             sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
                             notes = sheet(tracking(i).row, notesCol);
-                            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekr) ' // ' num2str(rekl) '/' num2str(rekr) ' - ' notes{1}]});
+                            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekle) '/' num2str(lekr) '/' num2str(lekre) ' // ' num2str(rekl) '/' num2str(rekle) '/' num2str(rekr) '/' num2str(rekre) ' - ' notes{1}]});
                             analyzedFuture(i) = 1;
                         catch ME
                             disp(ME.message);
