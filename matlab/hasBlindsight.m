@@ -37,6 +37,7 @@ for p=1:length(pooling)
             end
         end
         [~, lcaa(end+1), rcaa(end+1), ~, ~, loaa(end+1), roaa(end+1)] = evalc(['getStats(''' loc ''',''' mouseName ''',[' num2str(dy) '],[' num2str(ss) '], 0, 0,' num2str(analyzeCensored) ')']);
+        disp(rcaa(end));
     end
     [hl pl] = ttest(lcaa, loaa);
     [hr pr] = ttest(rcaa, roaa);

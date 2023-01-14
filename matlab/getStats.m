@@ -354,10 +354,10 @@ for i=1:length(fileList)
                             error('Do not know how to analyze these data');
                         end
 
-                        % The following analysis only applies to the
-                        % 3-choice task - Not quite sure if this is
+                        % The following analysis only applies to the 3-choice task - Not quite sure if this is
                         % relevant any more.
-                        if (worldTypes(worldIdx+1) == 3 && col ~= row)  % error trial
+                        %disp(stimIdx);
+                        if (worldTypes(worldIdx+1) == 3 && ~currCatch && col ~= row)  % error trial
                             nasal = trialRecs{8}(trialIdx);
                             temporal = trialRecs{9}(trialIdx);
                             high = trialRecs{10}(trialIdx);

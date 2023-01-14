@@ -490,7 +490,7 @@ for d_i=1:length(days)  % Iterate through all of the specified days
                                     totalTrialsIncluded(2) = totalTrialsIncluded(2) + 1;
                                 else
                                     totalExtinctTrialsIncluded(2) = totalExtinctTrialsIncluded(2) + 1;
-                                    %disp(num2str(trialIdx));
+                                    disp(num2str(trialIdx));
                                 end
                             end
                         else
@@ -541,7 +541,7 @@ for d_i=1:length(days)  % Iterate through all of the specified days
                                 if (extinct == 0)
                                     totalTrialsCensored(1) = totalTrialsCensored(1) + 1;
                                 else
-                                    totalExtinctTrialsCensored(1) = totalExtinctTrialsCensored(1) + 1;
+                                    totalExtinctTrialsCensored(2) = totalExtinctTrialsCensored(2) + 1;
                                 end
                             elseif (left == 0)
                                 if (extinct == 0)
@@ -688,19 +688,19 @@ if (~interactive && outputNewActionsFile && newActionsFileID ~= -1)
     disp(['Total ' modifier ' trials written to file = ' num2str(sum(totalTrialsIncluded))]);
     keptLCPct = round(pctAnalyzed(1)*100);
     keptLCCnt = totalTrialsIncluded(1);
-    allLCCnt = keptLCCnt + totalTrialsCensored(1);
+    allLCCnt = totalTrialsIncluded(1) + totalTrialsCensored(1);
     disp(['L trials kept = ' num2str(keptLCPct) '% (' num2str(keptLCCnt) '/' num2str(allLCCnt) ')']);
     keptLOPct = round(pctExtinctAnalyzed(1)*100);
     keptLOCnt = totalExtinctTrialsIncluded(1);
-    allLOCnt = keptLOCnt + totalExtinctTrialsCensored(1);
+    allLOCnt = totalExtinctTrialsIncluded(1) + totalExtinctTrialsCensored(1);
     disp(['L extinction trials kept = ' num2str(keptLOPct) '% (' num2str(keptLOCnt) '/' num2str(allLOCnt) ')']);
     keptRCPct = round(pctAnalyzed(2)*100);
     keptRCCnt = totalTrialsIncluded(2);
-    allRCCnt = keptRCCnt + totalTrialsCensored(2);
+    allRCCnt = totalTrialsIncluded(2) + totalTrialsCensored(2);
     disp(['R trials kept = ' num2str(keptRCPct) '% (' num2str(keptRCCnt) '/' num2str(allRCCnt) ')']);
     keptROPct = round(pctExtinctAnalyzed(2)*100);
     keptROCnt = totalExtinctTrialsIncluded(2);
-    allROCnt = keptROCnt + totalExtinctTrialsCensored(2);
+    allROCnt = totalExtinctTrialsIncluded(2) + totalExtinctTrialsCensored(2);
     disp(['R extinction trials kept = ' num2str(keptROPct) '% (' num2str(keptROCnt) '/' num2str(allROCnt) ')']);
     disp(['Mean of nasal extrema histograms: L = ' num2str(mean(nasalExtremaL)) ', R = ' num2str(mean(nasalExtremaR))]);
 end
