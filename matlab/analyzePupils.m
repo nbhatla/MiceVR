@@ -1,6 +1,6 @@
 function [LeyeKeptLCPct, LeyeKeptLOPct, LeyeKeptRCPct, LeyeKeptROPct, ...
     ReyeKeptLCPct, ReyeKeptLOPct, ReyeKeptRCPct, ReyeKeptROPct] = ...
-    analyzePupils(mouseName, days, rig, pxPerMm, useCR, useEyeMeasurements)
+    analyzePupils(mouseName, days, rig, pxPerMm, useCR, useEyeMeasurements, whichEyeToSaveWithoutCensoredTrials)
 % Once trackPupils is done this script is used to analyze the pupil positions and produce many plots.
 
 % It now also keeps track of eye blink times, based on when the centroid is lost.  This is VERY rough and should be 
@@ -98,6 +98,12 @@ optoRight = 1;
 optoBoth = 2;
 
 stimCenter = 20000;
+
+% The final argument is optional, for backward compatibility.
+% By default, we save the censored actions file based on the R eye tracking
+if nargin < 7
+    whichEyeToSaveWithoutCensoredTrials = 'R';
+end
 
 % START analysis
 % Important variables to carry across days, for plotting at the end
@@ -309,102 +315,100 @@ for dIdx=1:numDays
     % Plot all pupil positions over the session.
     % This is used to check for incorrect tracking by the software
     % This is only displayed if numDays == 1
-    if (numDays == 1)
-        if (correctNonFlatCurve)
-            for i=startVid:stopVid  % 1 is L, 2 is R
-                sumImLR(:,:,:,i) = sumImLR(:,:,:,i) ./ frameCnt;
-                % Show centers over this average image - commented out for now
-                %{
-                figure;
-                imshow(sumImLR(:,:,:,i)/255, 'InitialMagnification','fit');
-                hold on
-                if (i == 1)
-                    title([rootFileName ': Left eye, unaltered'], 'Interpreter', 'none');
-                else
-                    title([rootFileName ': Right eye, unaltered'], 'Interpreter', 'none');
-                end
-                scatter(centers(1:scatterStepSize:end,1,i), centers(1:scatterStepSize:end,2,i), 4, 'r', 'o', 'filled');
-                if (useCR(i))
-                    scatter(crCenters(1:scatterStepSize:end,1,i), crCenters(1:scatterStepSize:end,2,i), 4, 'b', 'o', 'filled');
-                end
-                %}
-                % Next, fit a line to the pupil centers, and use the angle of that line to the horizontal to rotate
-                % all of the centers.  These rotated centers will be used for the subsequent analysis.
-                pupX = centers(~isnan(centers(:,1,i)),1,i);
-                pupY = centers(~isnan(centers(:,2,i)),2,i);
-                [c, S] = polyfit(pupX, pupY, 1);
-                m = c(1);
-                b = c(2);
-                %[y_fit,delta] = polyval(c, pupX, S);
-                %figure
-                %scatter(centers(:,1,i), centers(:,2,i), 4, 'r', 'o', 'filled');
-                %hold on
-                %plot(pupX, y_fit, 'k-', 'LineWidth', 2)
-                %set(gca, 'YDir','reverse')
-                R_sq = 1 - (S.normr/norm(pupY - mean(pupY)))^2;
-                rotDeg = atand(m);  % rotation needed to flatten out portion of the ellipse
-                disp(['Rotated centers by ' num2str(round(rotDeg, 2)) ' deg']);
-                % Subtract the mean before rotating.  This isn't absolutely necessary, but it keeps the CR and pupil centers
-                % in the same rough region of the video frame, which makes visualizing slightly more sensible.
-                % The exact mean doesn't matter, as long as the same mean is used both for CR and the pupil centers.
-                if (useCR(i))
-                    mx = nanmedian(cat(1, centers(:,1,i), crCenters(:,1,i)));
-                    my = nanmedian(cat(1, centers(:,2,i), crCenters(:,2,i)));
-                else
-                    mx = nanmedian(centers(:,1,i));
-                    my = nanmedian(centers(:,2,i));
-                end
-                %disp(num2str(mx));
-                %disp(num2str(my));
-                centers(:,1,i) = centers(:,1,i) - mx;
-                centers(:,2,i) = centers(:,2,i) - my;
-                if (useCR(i))
-                    crCenters(:,1,i) = crCenters(:,1,i) - mx;
-                    crCenters(:,2,i) = crCenters(:,2,i) - my;
-                end
-                rotM = rot2d(-rotDeg); % make the ellipse horizontal by getting its slope to 0
-                centers(:,:,i) = transpose(rotM * centers(:,:,i)');  % now the centers have been rotated!
-                if (useCR(i))
-                    crCenters(:,:,i) = transpose(rotM * crCenters(:,:,i)');
-                end
-                % Add the means back
-                centers(:,1,i) = centers(:,1,i) + mx;
-                centers(:,2,i) = centers(:,2,i) + my;
-                if (useCR(i))
-                    crCenters(:,1,i) = crCenters(:,1,i) + mx;
-                    crCenters(:,2,i) = crCenters(:,2,i) + my;
-                end
-                % Plot just to confirm
-                figure;
-                imshow(sumImLR(:,:,:,i)/255, 'InitialMagnification','fit');
-                hold on
-                if (i == 1)
-                    title([rootFileName ': Left eye, straightened, censored'], 'Interpreter', 'none');
-                else
-                    title([rootFileName ': Right eye, straightened, censored'], 'Interpreter', 'none');
-                end
-                % Show all centers, so I can see how often it gets it wrong
-                % In fact, I can use deviations away from the point cloud as false alarms and censor post-hoc!  TODO.
-                % Now, just show points where neither CR nor pupil centers are NaN, as then I can use this image to 
-                % check for false positives of CRs and pupil centers.
-                if (useCR(i))
-                    discard = isnan(centers(1:scatterStepSize:end,1,i)) | isnan(crCenters(1:scatterStepSize:end,1,i));
-                    newCentersX = centers(1:scatterStepSize:end,1,i);
-                    newCentersY = centers(1:scatterStepSize:end,2,i);
-                    newCrCentersX = crCenters(1:scatterStepSize:end,1,i);
-                    newCrCentersY = crCenters(1:scatterStepSize:end,2,i);
-                    newCentersX = newCentersX(~discard);
-                    newCentersY = newCentersY(~discard);
-                    newCrCentersX = newCrCentersX(~discard);
-                    newCrCentersY = newCrCentersY(~discard);
-
-                    scatter(newCentersX, newCentersY, 4, 'r', 'o', 'filled');
-                    scatter(newCrCentersX, newCrCentersY, 4, 'b', 'o', 'filled');
-                else
-                    scatter(centers(1:scatterStepSize:end,1,i), centers(1:scatterStepSize:end,2,i), 4, 'r', 'o', 'filled');
-                end
-
+    if (correctNonFlatCurve)
+        for i=startVid:stopVid  % 1 is L, 2 is R
+            sumImLR(:,:,:,i) = sumImLR(:,:,:,i) ./ frameCnt;
+            % Show centers over this average image - commented out for now
+            %{
+            figure;
+            imshow(sumImLR(:,:,:,i)/255, 'InitialMagnification','fit');
+            hold on
+            if (i == 1)
+                title([rootFileName ': Left eye, unaltered'], 'Interpreter', 'none');
+            else
+                title([rootFileName ': Right eye, unaltered'], 'Interpreter', 'none');
             end
+            scatter(centers(1:scatterStepSize:end,1,i), centers(1:scatterStepSize:end,2,i), 4, 'r', 'o', 'filled');
+            if (useCR(i))
+                scatter(crCenters(1:scatterStepSize:end,1,i), crCenters(1:scatterStepSize:end,2,i), 4, 'b', 'o', 'filled');
+            end
+            %}
+            % Next, fit a line to the pupil centers, and use the angle of that line to the horizontal to rotate
+            % all of the centers.  These rotated centers will be used for the subsequent analysis.
+            pupX = centers(~isnan(centers(:,1,i)),1,i);
+            pupY = centers(~isnan(centers(:,2,i)),2,i);
+            [c, S] = polyfit(pupX, pupY, 1);
+            m = c(1);
+            b = c(2);
+            %[y_fit,delta] = polyval(c, pupX, S);
+            %figure
+            %scatter(centers(:,1,i), centers(:,2,i), 4, 'r', 'o', 'filled');
+            %hold on
+            %plot(pupX, y_fit, 'k-', 'LineWidth', 2)
+            %set(gca, 'YDir','reverse')
+            R_sq = 1 - (S.normr/norm(pupY - mean(pupY)))^2;
+            rotDeg = atand(m);  % rotation needed to flatten out portion of the ellipse
+            disp(['Rotated centers by ' num2str(round(rotDeg, 2)) ' deg']);
+            % Subtract the mean before rotating.  This isn't absolutely necessary, but it keeps the CR and pupil centers
+            % in the same rough region of the video frame, which makes visualizing slightly more sensible.
+            % The exact mean doesn't matter, as long as the same mean is used both for CR and the pupil centers.
+            if (useCR(i))
+                mx = nanmedian(cat(1, centers(:,1,i), crCenters(:,1,i)));
+                my = nanmedian(cat(1, centers(:,2,i), crCenters(:,2,i)));
+            else
+                mx = nanmedian(centers(:,1,i));
+                my = nanmedian(centers(:,2,i));
+            end
+            %disp(num2str(mx));
+            %disp(num2str(my));
+            centers(:,1,i) = centers(:,1,i) - mx;
+            centers(:,2,i) = centers(:,2,i) - my;
+            if (useCR(i))
+                crCenters(:,1,i) = crCenters(:,1,i) - mx;
+                crCenters(:,2,i) = crCenters(:,2,i) - my;
+            end
+            rotM = rot2d(-rotDeg); % make the ellipse horizontal by getting its slope to 0
+            centers(:,:,i) = transpose(rotM * centers(:,:,i)');  % now the centers have been rotated!
+            if (useCR(i))
+                crCenters(:,:,i) = transpose(rotM * crCenters(:,:,i)');
+            end
+            % Add the means back
+            centers(:,1,i) = centers(:,1,i) + mx;
+            centers(:,2,i) = centers(:,2,i) + my;
+            if (useCR(i))
+                crCenters(:,1,i) = crCenters(:,1,i) + mx;
+                crCenters(:,2,i) = crCenters(:,2,i) + my;
+            end
+            % Plot just to confirm
+            figure;
+            imshow(sumImLR(:,:,:,i)/255, 'InitialMagnification','fit');
+            hold on
+            if (i == 1)
+                title([rootFileName ': Left eye, straightened, censored'], 'Interpreter', 'none');
+            else
+                title([rootFileName ': Right eye, straightened, censored'], 'Interpreter', 'none');
+            end
+            % Show all centers, so I can see how often it gets it wrong
+            % In fact, I can use deviations away from the point cloud as false alarms and censor post-hoc!  TODO.
+            % Now, just show points where neither CR nor pupil centers are NaN, as then I can use this image to 
+            % check for false positives of CRs and pupil centers.
+            if (useCR(i))
+                discard = isnan(centers(1:scatterStepSize:end,1,i)) | isnan(crCenters(1:scatterStepSize:end,1,i));
+                newCentersX = centers(1:scatterStepSize:end,1,i);
+                newCentersY = centers(1:scatterStepSize:end,2,i);
+                newCrCentersX = crCenters(1:scatterStepSize:end,1,i);
+                newCrCentersY = crCenters(1:scatterStepSize:end,2,i);
+                newCentersX = newCentersX(~discard);
+                newCentersY = newCentersY(~discard);
+                newCrCentersX = newCrCentersX(~discard);
+                newCrCentersY = newCrCentersY(~discard);
+
+                scatter(newCentersX, newCentersY, 4, 'r', 'o', 'filled');
+                scatter(newCrCentersX, newCrCentersY, 4, 'b', 'o', 'filled');
+            else
+                scatter(centers(1:scatterStepSize:end,1,i), centers(1:scatterStepSize:end,2,i), 4, 'r', 'o', 'filled');
+            end
+
         end
     end
 
@@ -713,6 +717,10 @@ for dIdx=1:numDays
         for j=1:2
             if (extIdx == 0)  % not an extinction trial, so pool accordingly
                 s = stimEyeMoveTrials{stimIdx+1, j};  % pull out the cell that is for this stim num
+                %disp(i);
+                if (i == 108)
+                    a = 0;
+                end
                 s{end+1} = azimDeg(trimmedStarts(i):trimmedEnds(i)-1, j);  % add the eye movements for this trial to it
                 stimEyeMoveTrials{stimIdx+1, j} = s;
 
@@ -746,7 +754,7 @@ for dIdx=1:numDays
         end
     end
     
-        % Finally, calculate the amplitudes of all saccades observed.  To start, we will just analyze the azimuth trace.
+    % Finally, calculate the amplitudes of all saccades observed.  To start, we will just analyze the azimuth trace.
     % First, if there are NaNs in each eye trace, interpolate to fill in the data and remove all NaNs.
     % The code needs to annotate saccadeStart and saccadeEnd for each saccade.  Those are specific frames.
     % Then, a set of amplitudes can easily be extracted from these sets.
@@ -847,12 +855,24 @@ for dIdx=1:numDays
 
     disp(['Mean Rp-L = ' num2str(nanmean(RpL)) ', Rp-R = ' num2str(nanmean(RpR)) ])
 
-    [neL, neR, aL, aR, LeyeKeptLCPct, LeyeKeptLOPct, LeyeKeptRCPct, LeyeKeptROPct, ...
-        LeyeKeptLCCnt, LeyeAllLCCnt, LeyeKeptLOCnt, LeyeAllLOCnt, LeyeKeptRCCnt, LeyeAllRCCnt, LeyeKeptROCnt, LeyeAllROCnt] ...
-        = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'L', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
-    [neL, neR, aL, aR, ReyeKeptLCPct, ReyeKeptLOPct, ReyeKeptRCPct, ReyeKeptROPct, ...
-        ReyeKeptLCCnt, ReyeAllLCCnt, ReyeKeptLOCnt, ReyeAllLOCnt, ReyeKeptRCCnt, ReyeAllRCCnt, ReyeKeptROCnt, ReyeAllROCnt] ...
-        = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+    % On some days, one eye is poorly tracked. In this case, we will want to save the censored actions
+    % file for just the other eye. Right now, the last eye analyzed is the file that is saved - earlier
+    % files are overwritten.  So analyze the one you want to save last.
+    if (whichEyeToSaveWithoutCensoredTrials == 'L')
+        [neL, neR, aL, aR, ReyeKeptLCPct, ReyeKeptLOPct, ReyeKeptRCPct, ReyeKeptROPct, ...
+            ReyeKeptLCCnt, ReyeAllLCCnt, ReyeKeptLOCnt, ReyeAllLOCnt, ReyeKeptRCCnt, ReyeAllRCCnt, ReyeKeptROCnt, ReyeAllROCnt] ...
+            = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+        [neL, neR, aL, aR, LeyeKeptLCPct, LeyeKeptLOPct, LeyeKeptRCPct, LeyeKeptROPct, ...
+            LeyeKeptLCCnt, LeyeAllLCCnt, LeyeKeptLOCnt, LeyeAllLOCnt, LeyeKeptRCCnt, LeyeAllRCCnt, LeyeKeptROCnt, LeyeAllROCnt] ...
+            = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'L', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+    else 
+        [neL, neR, aL, aR, LeyeKeptLCPct, LeyeKeptLOPct, LeyeKeptRCPct, LeyeKeptROPct, ...
+            LeyeKeptLCCnt, LeyeAllLCCnt, LeyeKeptLOCnt, LeyeAllLOCnt, LeyeKeptRCCnt, LeyeAllRCCnt, LeyeKeptROCnt, LeyeAllROCnt] ...
+            = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'L', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+        [neL, neR, aL, aR, ReyeKeptLCPct, ReyeKeptLOPct, ReyeKeptRCPct, ReyeKeptROPct, ...
+            ReyeKeptLCCnt, ReyeAllLCCnt, ReyeKeptLOCnt, ReyeAllLOCnt, ReyeKeptRCCnt, ReyeAllRCCnt, ReyeKeptROCnt, ReyeAllROCnt] ...
+            = plotTargetAzimLoc(mouseName, days(dIdx), [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 0);
+    end
     
     keptCnt(1, 1) = keptCnt(1, 1) + LeyeKeptLCCnt;
     keptCnt(2, 1) = keptCnt(2, 1) + LeyeKeptLOCnt;
@@ -1076,9 +1096,14 @@ for eye=1:2  % For each eye
     annotation('textbox', [.8 0 .2 .2], 'String', ['n=' num2str(n)], 'FitBoxToText', 'on', 'EdgeColor', 'white');  
     if (length(numStim) == 1)
         if (numStim(1) == 3)
-            legend(h, ['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')']);
+            legend(h, ['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')']);
             if (~isempty(mExt{1,1}))
-                legend(h, ['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')'], ...
+                % Fill with 0s so trialCnt doesn't error when setting the standard legend below
+                for t=length(trialCnt)+1:5
+                    trialCnt(t) = 0;
+                    skipLegend(t) = 1;
+                end
+                legend(h, ['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')'], ...
                     ['left only (' num2str(trialCnt(4)) ')'], ['right only (' num2str(trialCnt(5)) ')']);
             end
         elseif (numStim(1) == 4)
@@ -1309,9 +1334,14 @@ for eye=1:2  % For each eye
     annotation('textbox', [.8 0 .2 .2], 'String', ['n=' num2str(n)], 'FitBoxToText', 'on', 'EdgeColor', 'white');  
     if (length(numStim) == 1)
         if (numStim(1) == 3)
-            standardLegend = {['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')']};
+            standardLegend = {['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')']};
             if (~isempty(muExt{1,1}))
-                standardLegend  = {['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')'], ...
+                % Fill with 0s so trialCnt doesn't error when setting the standard legend below
+                for t=length(trialCnt)+1:5
+                    trialCnt(t) = 0;
+                    skipLegend(t) = 1;
+                end
+                standardLegend  = {['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')'], ...
                     ['left only (' num2str(trialCnt(4)) ')'], ['right only (' num2str(trialCnt(5)) ')']};
             end
         elseif (numStim(1) == 4)
@@ -1398,13 +1428,13 @@ for eye=1:2  % For each eye
             end
         end
     end
-    minLengths(eye) = min(stimIncorrectEyeLengths);  % Use min instead of max, as max adds some artifacts at the end, and both give the same shape
-    
     % If mouse was perfect with no incorrect trials, exit and move on
     if (n == 0)
         break;
     end
-
+    
+    minLengths(eye) = min(stimIncorrectEyeLengths);  % Use min instead of max, as max adds some artifacts at the end, and both give the same shape
+    
     % Next, resample the longer trials to the length of the shortest trial, because all 4 trial types will be plotted on the same axis
     for stimIdx=1:totalNumStim
         for actIdx=1:totalNumStim
@@ -1574,9 +1604,14 @@ for eye=1:2  % For each eye
     annotation('textbox', [.8 0 .2 .2], 'String', ['n=' num2str(n)], 'FitBoxToText', 'on', 'EdgeColor', 'white');  
     if (length(numStim) == 1)
         if (numStim(1) == 3)
-            standardLegend = {['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')']};
+            standardLegend = {['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')']};
             if (~isempty(muExt{1,1}))
-                standardLegend = {['left stim (' num2str(trialCnt(1)) ')'], ['right stim (' num2str(trialCnt(2)) ')'], ['center stim (' num2str(trialCnt(3)) ')'], ...
+                % Fill with 0s so trialCnt doesn't error when setting the standard legend below
+                for t=length(trialCnt)+1:5
+                    trialCnt(t) = 0;
+                    skipLegend(t) = 1;
+                end
+                standardLegend = {['left center (' num2str(trialCnt(1)) ')'], ['right center (' num2str(trialCnt(2)) ')'], ['center only (' num2str(trialCnt(3)) ')'], ...
                     ['left only (' num2str(trialCnt(4)) ')'], ['right only (' num2str(trialCnt(5)) ')']};
             end
         elseif (numStim(1) == 4)

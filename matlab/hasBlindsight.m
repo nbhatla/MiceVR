@@ -37,17 +37,20 @@ for p=1:length(pooling)
             end
         end
         [~, lcaa(end+1), rcaa(end+1), ~, ~, loaa(end+1), roaa(end+1)] = evalc(['getStats(''' loc ''',''' mouseName ''',[' num2str(dy) '],[' num2str(ss) '], 0, 0,' num2str(analyzeCensored) ')']);
-        disp(rcaa(end));
+        %disp(rcaa(end));
     end
-    [hl pl] = ttest(lcaa, loaa);
-    [hr pr] = ttest(rcaa, roaa);
+    % Initially, I was using a paired t-test. That is appropriate for pre v post RC or RO, but not for these data, because
+    % here we are comparing 2 different measures, even if they are on the same subjects. So the correct thing to do
+    % is to use the 2-sample t-test.
+    [hl pl] = ttest2(lcaa, loaa);
+    [hr pr] = ttest2(rcaa, roaa);
     
     disp([mouseName ' - results for pooling = ' num2str(pooling(p))]);
     disp(['LC v LO: two-tailed paired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
     disp(['RC v RO: two-tailed paired t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
 
-    [hl pl] = ttest(lcaa, loaa, 'Tail', 'left');
-    [hr pr] = ttest(rcaa, roaa, 'Tail', 'left');
+    [hl pl] = ttest2(lcaa, loaa, 'Tail', 'left');
+    [hr pr] = ttest2(rcaa, roaa, 'Tail', 'left');
 
     disp(['LC v LO: one-tailed paired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
     disp(['RC v RO: one-tailed paired t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
