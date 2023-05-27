@@ -106,7 +106,7 @@ public static class Globals
 	public static float occluderYScale;
 
 	// These are initial values, but if the user provides any values, these get overwritten during runtime
-	public static float defaultVisibleNasalBoundary = 0;
+	public static float defaultVisibleNasalBoundary = -90;
 	public static float defaultVisibleTemporalBoundary = 90;
 	public static float defaultVisibleHighBoundary = 50;
 	public static float defaultVisibleLowBoundary = -30;

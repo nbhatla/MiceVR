@@ -445,20 +445,22 @@ for tt_i=1:length(trialTypeStrArr)
             replaysFileID = fopen([replaysFileList(filtRecIDs(r_i)).folder '\' replaysFileNames{filtRecIDs(r_i)}]);
             if (replaysFileID ~= -1)  % File was opened properly
                 C = textscan(replaysFileID, getReplayLineFormat(), 'Delimiter', {';', ','});
-                trajX{end+1} = C{1}(1:length(C{3})-cutFromEnd);
-                trajZ{end+1} = C{3}(1:end-cutFromEnd);
-                if (length(trajX{end}) < minTrajLength)
-                    minTrajLength = length(trajX{end}); % Store for resampling all trajectories later
+                if (~isempty(C{3}))  % Sometimes there are initial trial files that are blank - ignore these completely
+                    trajX{end+1} = C{1}(1:length(C{3})-cutFromEnd);
+                    trajZ{end+1} = C{3}(1:end-cutFromEnd);
+                    if (length(trajX{end}) < minTrajLength)
+                        minTrajLength = length(trajX{end}); % Store for resampling all trajectories later
+                    end
+
+                    % Sometimes the replay file has an x coord but no z coord, not sure why.
+                    % TODO: plotFilledEllipses(C{1}(1:length(C{3})-cutFromEnd), C{3}(1:end-cutFromEnd), markSize, markSize, 
+                    if (plotIndivTrials)
+                        scatter(C{1}(1:length(C{3})-cutFromEnd), C{3}(1:end-cutFromEnd), markSize, ...
+                            jet(length(C{3}(1:end-cutFromEnd))), 'filled', 'MarkerFaceAlpha', markAlpha, 'MarkerEdgeAlpha', markAlpha);
+                    end
+                    % Plot starting point (blue dot)
+                    plot(startX, startZ, 'o', 'MarkerSize', markSize, 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'w');
                 end
-                
-                % Sometimes the replay file has an x coord but no z coord, not sure why.
-                % TODO: plotFilledEllipses(C{1}(1:length(C{3})-cutFromEnd), C{3}(1:end-cutFromEnd), markSize, markSize, 
-                if (plotIndivTrials)
-                    scatter(C{1}(1:length(C{3})-cutFromEnd), C{3}(1:end-cutFromEnd), markSize, ...
-                        jet(length(C{3}(1:end-cutFromEnd))), 'filled', 'MarkerFaceAlpha', markAlpha, 'MarkerEdgeAlpha', markAlpha);
-                end
-                % Plot starting point (blue dot)
-                plot(startX, startZ, 'o', 'MarkerSize', markSize, 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'w');
                 fclose(replaysFileID);
             end
         end
