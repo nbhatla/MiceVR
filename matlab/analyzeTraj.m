@@ -191,6 +191,18 @@ for tt_i=1:length(trialTypeStrArr)
             disp(['Could not find replays for day = ' dayNum '. Continuing to next day.']);
             continue; 
         end
+        
+        % Sometimes, for unknown reasons, there is an intitial replay file that is empty. Delete this from the list. It might not 
+        emptyReplayIdx = [];
+        for (r_i=1:length(replaysFileList))
+            if (replaysFileList(r_i).bytes == 0)
+                emptyReplayIdx = [emptyReplayIdx r_i];
+            end
+        end
+        
+        for er_i=1:length(emptyReplayIdx)
+            replaysFileList = cat(1, replaysFileList(1:emptyReplayIdx(er_i)-er_i), replaysFileList(emptyReplayIdx(er_i)-er_i+2:end));
+        end
 
         % Get the replayFileNames and sort them in trial order
         s = struct2cell(replaysFileList);
@@ -445,8 +457,10 @@ for tt_i=1:length(trialTypeStrArr)
             replaysFileID = fopen([replaysFileList(filtRecIDs(r_i)).folder '\' replaysFileNames{filtRecIDs(r_i)}]);
             if (replaysFileID ~= -1)  % File was opened properly
                 C = textscan(replaysFileID, getReplayLineFormat(), 'Delimiter', {';', ','});
-                if (~isempty(C{3}))  % Sometimes there are initial trial files that are blank - ignore these completely
+                if (~isempty(C{3}) && length(C{1}) > 3*fps)  % Sometimes there are initial trial files that are blank - ignore these completely
+                    % Also sometimes the trial is very short, like if it is the last trial. Ignore those too.
                     trajX{end+1} = C{1}(1:length(C{3})-cutFromEnd);
+                    %disp(trajX);
                     trajZ{end+1} = C{3}(1:end-cutFromEnd);
                     if (length(trajX{end}) < minTrajLength)
                         minTrajLength = length(trajX{end}); % Store for resampling all trajectories later
