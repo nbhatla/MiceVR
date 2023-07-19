@@ -46,14 +46,14 @@ for p=1:length(pooling)
     [hr pr] = ttest2(rcaa, roaa);
     
     disp([mouseName ' - results for pooling = ' num2str(pooling(p))]);
-    disp(['LC v LO: two-tailed paired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
-    disp(['RC v RO: two-tailed paired t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
+    disp(['LC v LO: two-tailed t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
+    disp(['RC v RO: two-tailed t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
 
     [hl pl] = ttest2(lcaa, loaa, 'Tail', 'left');
     [hr pr] = ttest2(rcaa, roaa, 'Tail', 'left');
 
-    disp(['LC v LO: one-tailed paired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
-    disp(['RC v RO: one-tailed paired t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
+    disp(['LC v LO: one-tailed t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
+    disp(['RC v RO: one-tailed t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
 
 end
 

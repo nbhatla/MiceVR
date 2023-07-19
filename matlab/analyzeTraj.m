@@ -24,7 +24,7 @@ function [f, mX, mZ, xCI95, zCI95] = analyzeTraj(mouseName, days, sessions, tria
 %   "L-L" - left target, left action
 %   "L-R" - left target, right action
 %   "L-S" - left target, straight action
-%   "R-*" - right target, all actions
+%   "R-*" - right target, all actionsg
 %   "R-L" - right target, left action
 %   "R-R" - right target, right action
 %   "R-S" - right target, straight action
@@ -457,7 +457,7 @@ for tt_i=1:length(trialTypeStrArr)
             replaysFileID = fopen([replaysFileList(filtRecIDs(r_i)).folder '\' replaysFileNames{filtRecIDs(r_i)}]);
             if (replaysFileID ~= -1)  % File was opened properly
                 C = textscan(replaysFileID, getReplayLineFormat(), 'Delimiter', {';', ','});
-                if (~isempty(C{3}) && length(C{1}) > 3*fps)  % Sometimes there are initial trial files that are blank - ignore these completely
+                if (~isempty(C{3}) && length(C{1}) > 4*fps)  % Sometimes there are initial trial files that are blank - ignore these completely
                     % Also sometimes the trial is very short, like if it is the last trial. Ignore those too.
                     trajX{end+1} = C{1}(1:length(C{3})-cutFromEnd);
                     %disp(trajX);
