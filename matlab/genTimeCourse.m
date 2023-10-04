@@ -1,15 +1,5 @@
-function [lcaa, rcaa, loaa, roaa] = hasBlindsight(loc, mouseName, days, sessions, analyzeCensored, pooling)
-
-% This helper with take in data for 1 mouse, use getStats to analyze each day, and then 
-% output whether there is a difference between RO and RC across all the day.  
-% Since the number of RO trials is often low, we also do this analysis pooling by 
-% 1, 2..pooling number of days.  Pooling is necessary for most mice to see a difference
-% between RO and RC.  It is even better to treat all sessions as a single series of trials
-% and bin when you hit a certain number of RO trials, such as 10, but I will try this
-% analysis later. 
-
-% Initially we use a two-tailed paired t test, but we could also use a one-tailed paired 
-% t test as an option in the future.
+function [RC RO] = genTimeCourse(loc, mouseName, days, sessions, includeCorrectionTrials, analyzeCensored, pooling)
+% This function produces the RC and RO values for the mouse over time
 
 for p=1:length(pooling)
     lcaa = []; % LC adjusted accuracy
@@ -36,7 +26,7 @@ for p=1:length(pooling)
                 ss(end+1) = sessions(d-1+e);
             end
         end
-        [~, lcaa(end+1), rcaa(end+1), ~, ~, loaa(end+1), roaa(end+1)] = evalc(['getStats(''' loc ''',''' mouseName ''',[' num2str(dy) '],[' num2str(ss) '], 0, 0,' num2str(analyzeCensored) ')']);
+        [~, lcaa(end+1), rcaa(end+1), ~, ~, loaa(end+1), roaa(end+1)] = evalc(['getStats(''' loc ''',''' mouseName ''',[' num2str(dy) '],[' num2str(ss) '], 0,' num2str(includeCorrectionTrials) ',' num2str(analyzeCensored) ')']);
         %disp(rcaa(end));
     end
     % Initially, I was using a paired t-test. That is appropriate for pre v post RC or RO, but not for these data, because
@@ -48,7 +38,7 @@ for p=1:length(pooling)
     
     disp([mouseName ' - results for pooling = ' num2str(pooling(p))]);
     disp(['LC v LO: two-tailed t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; LO mean=' num2str(nanmean(loaa)) ', std=' num2str(nanstd(loaa))]);
-    disp(['RC v RO: two-tailed t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
+    disp(['RC v RO: two-tailed t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
 
     [hl pl] = ttest(lcaa, loaa, 'Tail', 'left');
     [hr pr] = ttest(rcaa, roaa, 'Tail', 'left');
@@ -57,5 +47,6 @@ for p=1:length(pooling)
     disp(['RC v RO: one-tailed t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; RO mean=' num2str(nanmean(roaa)) ', std=' num2str(nanstd(roaa))]);
 
 end
+
 
 end

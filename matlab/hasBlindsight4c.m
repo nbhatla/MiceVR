@@ -67,18 +67,18 @@ for p=1:length(pooling)
 
     % Again, the 2-sample t test is more appropriate here than the paired t test, 
     % because the 2 measures are measuring different things.
-    [hl pl] = ttest2(lcaa, laa);
-    [hr pr] = ttest2(rcaa, raa);
+    [hl pl] = ttest(lcaa, laa);
+    [hr pr] = ttest(rcaa, raa);
     
     disp([mouseName ' - results for pooling = ' num2str(pooling(p))]);
     disp(['LC v 4L: two-tailed unpaired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; 4L mean=' num2str(nanmean(laa)) ', std=' num2str(nanstd(laa))]);
-    disp(['RC v 4R: two-tailed unpaired t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; 4R mean=' num2str(nanmean(raa)) ', std=' num2str(nanstd(raa))]);
+    disp(['RC v 4R: two-tailed unpaired t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; 4R mean=' num2str(nanmean(raa)) ', std=' num2str(nanstd(raa))]);
 
-    [hl pl] = ttest2(lcaa, laa, 'Tail', 'left');
-    [hr pr] = ttest2(rcaa, raa, 'Tail', 'left');
+    [hl pl] = ttest(lcaa, laa, 'Tail', 'left');
+    [hr pr] = ttest(rcaa, raa, 'Tail', 'left');
 
     disp(['LC v LO: one-tailed unpaired t test p val = ' num2str(pl) ', LC mean=' num2str(nanmean(lcaa)) ', std=' num2str(nanstd(lcaa)) '; 4L mean=' num2str(nanmean(laa)) ', std=' num2str(nanstd(laa))]);
-    disp(['RC v RO: one-tailed unpaired t test p val = <strong>' num2str(pr) '</strong>, RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; 4R mean=' num2str(nanmean(raa)) ', std=' num2str(nanstd(raa))]);
+    disp(['RC v RO: one-tailed unpaired t test p val = ' num2str(pr) ', RC mean=' num2str(nanmean(rcaa)) ', std=' num2str(nanstd(rcaa)) '; 4R mean=' num2str(nanmean(raa)) ', std=' num2str(nanstd(raa))]);
 
 end
 

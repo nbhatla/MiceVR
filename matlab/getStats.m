@@ -92,7 +92,7 @@ end
 numFilesAnalyzed = 0;
 for i=1:length(fileList)
     for j=1:length(days)
-        if (contains(fileList(i).name, [mouseName '-D' num2str(days(j)) '-']))
+        if (contains(lower(fileList(i).name), [lower(mouseName) '-d' num2str(days(j)) '-']))
             matchesSession = false;
             if isempty(sessions)
                 matchesSession = true;
