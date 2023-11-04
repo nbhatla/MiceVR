@@ -59,7 +59,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
         rig = sheet(rigNumRow, rigNumCol);
         rig = str2double(rig{1}(2:end));  % Remove the leading number sign
         mouseName = sheet(mouseNameRow, mouseNameCol);
-        mouseName = mouseName{1};
+        mouseName = strtrim(mouseName{1}); % Added strtrm to remove leading and trailing whitespaces, as Kathleen sometimes adds them to the mouseName in the sheet and on the tab - added 2023/11/4 
         if rig == rigNum
             disp ([mouseName ' is on rig #' num2str(rig)]);
             % Now, find the last complete training day, check and see if it is is n20 or
