@@ -28,7 +28,7 @@ numVideosTracking = 0;
 
 % 6 was the max on my laptop before I got disk IO errors.  Maybe the desktops can do more?  
 % Laptop had 4 physical cores but 8 virtual, but desktop has 6 physical and 6 logical.  So probably 6 is the most.
-maxVideoTracking = 4;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
+maxVideoTracking = 2;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
 numThreads = maxVideoTracking;
 
 futureNum = 0;
