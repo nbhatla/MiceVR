@@ -280,8 +280,6 @@ public class Loader : MonoBehaviour {
 						float.TryParse (str, out f);
 						Globals.distractorAngles.Add (f);
 					}
-					//float.TryParse (xn["distractorAngle"].InnerText.Split (';') [0], out x);
-					//float.TryParse(xn["distractorAngle"].InnerText, out Globals.distractorAngle);
 				}
 
 				if (xn["distractorIntensity1"] != null) {
@@ -487,6 +485,26 @@ public class Loader : MonoBehaviour {
 						Globals.correctExtinction = true;
 					else
 						Globals.correctExtinction = false;
+				}
+
+				if (xn["distractorAngle"] != null) {
+					string[] strArr = xn ["distractorAngle"].InnerText.Split (';');
+					foreach (string str in strArr) {
+						float f;
+						float.TryParse (str, out f);
+						Globals.distractorAngles.Add (f);
+					}
+				}
+
+				// 2023/12/1 - support for varying the opacity of all of the targets
+				if (xn ["opacities"] != null) {
+					string[] strArr = xn ["opacities"].InnerText.Split(';');
+					Globals.opacities.Clear ();
+					foreach (string o in strArr) {
+						float of;
+						float.TryParse (o, out of);
+						Globals.opacities.Add (of);
+					}
 				}
 
 				if (xn ["worldBlockSize"] != null) {

@@ -833,6 +833,7 @@ public class GameControlScript : MonoBehaviour
 			// Added support for multi-world blocks
 			// Added support for randomly ordered blocks of worlds
 			// Only works with bias-correction disabled
+			// 2023/12/1 - Added support for blocks that indicate the opacity of the targets
 			if (blockSize > 0 && !Globals.biasCorrection && 
 				(((Globals.worlds.Count == 1 || Globals.alternateWorlds) && Math.Ceiling((double)Globals.numNonCorrectionTrials / Globals.worlds.Count) % blockSize == 1) ||  
 					(Globals.precompWorldBlock != null && Array.IndexOf(Globals.precompWorldBlock, worldIdx) == ((Globals.numNonCorrectionTrials-1) % Globals.worldBlockSize)))) {
@@ -988,6 +989,71 @@ public class GameControlScript : MonoBehaviour
 				}
 				Debug.Log (String.Join (",", precompExtinctBlock.Select (x => x.ToString ()).ToArray ()));
 				Globals.SetCurrentWorldPrecompExtinctBlock(precompExtinctBlock);
+
+				// Next, if opacities has more than one entry, randomly select from the opacity list and precomp the opacities for each trial
+				// Note that if you want to set the opacity of a target to be constant throughout a session, just set it in the scenario xml file
+				// This feature is if you want the opacities to very during a session, between a set of values, e.g. 100%, 6%, and 3%.
+				List<float>[] precompOpacityBlock = new List<float>[blockSize];
+				if (Globals.opacities.Count > 1) {
+					// First, count the number of trials of each stim type
+					int[] numTrialsPerStimLoc = new int[numTrees];
+					int numLO = 0;
+					int numRO = 0;
+					int ran;
+					for (int i = 0; i < blockSize; i++) {  // Iterate through each trial in a block
+						if (precompTrialBlock [i] != Globals.CATCH_IDX) {  // This is a catch trial
+							if (precompExtinctBlock [i] == 1) {	// This is an extinction (LO or RO) trial
+								if (precompTrialBlock [i] == 0) {  // This is an LO trial
+									numLO = numLO + 1;
+								} else {
+									numRO = numRO + 1;
+								}
+							} else {
+								numTrialsPerStimLoc [precompTrialBlock [i]] = numTrialsPerStimLoc [precompTrialBlock [i]] + 1;
+							}
+						}
+					}
+
+					// Second, calculate number of trials of each opacity to have, then save the precompOpacityBlock
+					List<List<float>> opacityLCList = MakeListOfOpacities(Globals.opacities, numTrialsPerStimLoc[0], 2, 0);
+					List<List<float>> opacityRCList = MakeListOfOpacities(Globals.opacities, numTrialsPerStimLoc[1], 2, 1);
+					List<List<float>> opacityCOList = MakeListOfOpacities(Globals.opacities, numTrialsPerStimLoc[2], 1, 2);
+					List<List<float>> opacityLOList = MakeListOfOpacities(Globals.opacities, numLO, 1, 0);
+					List<List<float>> opacityROList = MakeListOfOpacities(Globals.opacities, numRO, 1, 1);
+
+					// Now, iterate through the block, randomly assign an opacity set to a trial, then remove from the corresponding opacity set!  This does the best we can at equalizing opacity selection, better than just picking at random
+					for (int i = 0; i < blockSize; i++) {
+						if (precompTrialBlock [i] != Globals.CATCH_IDX) {
+							if (precompExtinctBlock [i] == 1) {	// This is an extinction (LO or RO) trial
+								if (precompTrialBlock [i] == 0) {  // This is an LO trial
+									ran = UnityEngine.Random.Range (0, opacityLOList.Count);
+									precompOpacityBlock [i] = opacityLOList [ran];
+									opacityLOList.RemoveAt (ran);
+								} else {  							// This is an RO trial
+									ran = UnityEngine.Random.Range (0, opacityROList.Count);
+									precompOpacityBlock [i] = opacityROList [ran];
+									opacityROList.RemoveAt (ran);
+								}
+							} else {
+								if (precompTrialBlock [i] == 0) {  // This is an LC trial
+									ran = UnityEngine.Random.Range (0, opacityLCList.Count);
+									precompOpacityBlock [i] = opacityLCList [ran];
+									opacityLCList.RemoveAt (ran);
+								} else if (precompTrialBlock [i] == 1) {	// This is an RC trial
+									ran = UnityEngine.Random.Range (0, opacityRCList.Count);
+									precompOpacityBlock [i] = opacityRCList [ran];
+									opacityRCList.RemoveAt (ran);
+								} else {							// This is a CO trial
+									ran = UnityEngine.Random.Range (0, opacityCOList.Count);
+									precompOpacityBlock [i] = opacityCOList [ran];
+									opacityCOList.RemoveAt (ran);
+								}
+							}
+						}
+					}
+				}
+				Debug.Log (String.Join (",", precompOpacityBlock[0].Select (x => x.ToString ()).ToArray ()));
+				Globals.SetCurrentWorldPrecompOpacityBlock (precompOpacityBlock);
 
 				// Next, if optoAlternation is turned off and this is an opto game, precompute the opto state for each trial
 				if (Globals.optoSide != Globals.optoOff && !Globals.optoAlternation) { // an optoSide was specified and optoAlternation is turned off
@@ -1659,10 +1725,99 @@ public class GameControlScript : MonoBehaviour
         this.state = "Running";
 	}
 
+	// The list of opacities will have 3 values: left, Right, Center.  This simplifies setting the opacities in SetupTreeActivation, since that function doesn't know the trialtype.
+	private List<List<float>> MakeListOfOpacities(List<float> opacities, int numTrials, int numTargets, int rewardedTarget) {
+		int numOpacities = opacities.Count;
+		int numOpacityCombinations = (int)Math.Pow(numOpacities, numTargets);
+		int numTrialsPerCombination = (int)Math.Ceiling ((float)numTrials / (float)numOpacityCombinations);  // Take a ceiling so that there will be more items than will be picked from the list.  If floor, we would run out of items.
+		List<List<float>> opacitiesToChooseFrom = new List<List<float>>();
+
+		Debug.Log (numTrials.ToString () + " - " + numOpacityCombinations + " - " + numTrialsPerCombination.ToString());
+
+		if (numTargets == 1) {  // LO or RO or CO trials
+			for (int i = 0; i < numOpacities; i++) {
+				for (int j = 0; j < numTrialsPerCombination; j++) {
+					List<float> opas = new List<float> ();
+					if (rewardedTarget == 0) {
+						opas.Add (opacities [i]);
+						opas.Add (1);  // Set the non-visible targets to 100
+						opas.Add (1);  // Set the non-visible targets to 100
+					} else if (rewardedTarget == 1) {
+						opas.Add (1);  // Set the non-visible targets to 100
+						opas.Add (opacities [i]);
+						opas.Add (1);  // Set the non-visible targets to 100
+					} else if (rewardedTarget == 2) {
+						opas.Add (1);  // Set the non-visible targets to 100
+						opas.Add (1);  // Set the non-visible targets to 100
+						opas.Add (opacities [i]);
+					}
+					opacitiesToChooseFrom.Add(opas);
+				}
+			}
+		} else if (numTargets == 2) {
+			for (int i = 0; i < numOpacities; i++) {
+				for (int j = 0; j < numOpacities; j++) {
+					for (int k = 0; k < numTrialsPerCombination; k++) {
+						List<float> opas = new List<float> ();
+						if (rewardedTarget == 0) { // LC trial
+							opas.Add (opacities [j]);
+							opas.Add (1);
+							opas.Add (opacities [i]);
+						} else if (rewardedTarget == 1) {  // RC trial
+							opas.Add (1);
+							opas.Add (opacities [j]);
+							opas.Add (opacities [i]);
+						}
+						//Debug.Log(opacities [i].ToString() + " - " + opacities[j].ToString());
+						opacitiesToChooseFrom.Add(opas);
+					}
+				}
+			}
+		}
+
+		PrintListOfListsOfFloats (opacitiesToChooseFrom);
+
+		return opacitiesToChooseFrom;
+	}
+
+	private void PrintListOfListsOfFloats(List<List<float>> lis) {
+		string str = "[";
+
+		for (int i = 0; i < lis.Count; i++) {
+			int idx = 0;
+			foreach (float f in lis[i]) {
+				str += f.ToString ();
+				if (idx != lis [i].Count - 1) {
+					str += "/";
+				}
+				idx++;
+			}
+			str += ", ";
+		}
+		str += "]";
+
+		Debug.Log (str);
+	}
+		
     private void SetupTreeActivation(GameObject[] gos, int treeToActivate, int maxTrees) {
+		string str = "[";
+
+		List<float> treeOpas = Globals.GetCurrentWorld ().precompOpacityBlock [(int)Math.Ceiling ((double)Globals.numNonCorrectionTrials / Globals.worlds.Count - 1) % Globals.blockSize];
+		int idx = 0;
+		foreach (float f in treeOpas) {
+			str += f.ToString ();
+			if (idx != treeOpas.Count - 1) {
+				str += "/";
+			}
+			idx++;
+		}
+		str += "]";
+		Debug.Log (str);
 		for (int i = 0; i < maxTrees; i++) {
             gos[i].SetActive(true);
-			gos [i].GetComponent<WaterTreeScript> ().SetCorrect (false);
+			gos[i].GetComponent<WaterTreeScript> ().SetCorrect (false);
+			gos[i].GetComponent<WaterTreeScript> ().SetOpacity (Globals.GetOpacityForTree(i));
+			//Debug.Log (Globals.GetOpacityForTree (i).ToString ());
 			if (i == treeToActivate) {
 				gos [i].GetComponent<WaterTreeScript> ().SetCorrect (true);
 				List<int> hiddenIdx = Globals.GetCurrentWorld ().hiddenIdx;
