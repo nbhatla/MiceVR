@@ -674,6 +674,8 @@ public class GameControlScript : MonoBehaviour
 		float vfreq;
 		float angle;
 		float distractorAngle;  // we will use 360 as the null value
+		float targetOpacity;
+		float distractorOpacity;
 		int worldIdx;
 		int optoState = Globals.optoOff;
 		int blockSize = Globals.blockSize;  // Since this can be different for each world, keep a local variable here to store this difference, if there is one
@@ -695,6 +697,8 @@ public class GameControlScript : MonoBehaviour
 			angle = Globals.targetAngle [Globals.targetAngle.Count - 1];
 			worldIdx = Globals.worldIdxList [Globals.worldIdxList.Count - 1];
 			distractorAngle = Globals.distractorAngle [Globals.distractorAngle.Count - 1];
+			targetOpacity = Globals.targetOpacity [Globals.targetOpacity.Count - 1];
+			distractorOpacity = Globals.distractorOpacity [Globals.distractorOpacity.Count - 1];
 			optoState = Globals.optoStates [Globals.optoStates.Count - 1];
 			Globals.worldIdxList.Add(worldIdx);  		// Record which world this trial is on - must happen before below
 			// If trees are hidden at the star, rehide the tree
@@ -824,6 +828,8 @@ public class GameControlScript : MonoBehaviour
 			vfreq = Globals.CATCH_IDX;
 			angle = Globals.CATCH_IDX;
 			distractorAngle = 360;  // we will use 360 as the null value
+			targetOpacity = 1;
+			distractorOpacity = Globals.CATCH_IDX;   // Undefined opacity, until we know a target is there
 
 			int treeToActivate = 0;
 			float r = UnityEngine.Random.value;
@@ -993,8 +999,8 @@ public class GameControlScript : MonoBehaviour
 				// Next, if opacities has more than one entry, randomly select from the opacity list and precomp the opacities for each trial
 				// Note that if you want to set the opacity of a target to be constant throughout a session, just set it in the scenario xml file
 				// This feature is if you want the opacities to very during a session, between a set of values, e.g. 100%, 6%, and 3%.
-				List<float>[] precompOpacityBlock = new List<float>[blockSize];
 				if (Globals.opacities.Count > 1) {
+					List<float>[] precompOpacityBlock = new List<float>[blockSize];
 					// First, count the number of trials of each stim type
 					int[] numTrialsPerStimLoc = new int[numTrees];
 					int numLO = 0;
@@ -1049,11 +1055,13 @@ public class GameControlScript : MonoBehaviour
 									opacityCOList.RemoveAt (ran);
 								}
 							}
+						} else {  // On catch trials, there are not targets, so can set the opacity block to -1 (our null value)
+							precompOpacityBlock [i] = new List<float>() {(float)Globals.CATCH_IDX};
 						}
 					}
+					//Debug.Log (String.Join (",", precompOpacityBlock[0].Select (x => x.ToString ()).ToArray ()));
+					Globals.SetCurrentWorldPrecompOpacityBlock (precompOpacityBlock);
 				}
-				Debug.Log (String.Join (",", precompOpacityBlock[0].Select (x => x.ToString ()).ToArray ()));
-				Globals.SetCurrentWorldPrecompOpacityBlock (precompOpacityBlock);
 
 				// Next, if optoAlternation is turned off and this is an opto game, precompute the opto state for each trial
 				if (Globals.optoSide != Globals.optoOff && !Globals.optoAlternation) { // an optoSide was specified and optoAlternation is turned off
@@ -1468,11 +1476,18 @@ public class GameControlScript : MonoBehaviour
 					}
 
 					SetupTreeActivation (gos, treeToActivate, 3);
+					if (Globals.GetCurrentWorld ().precompOpacityBlock != null) {
+						targetOpacity = Globals.GetOpacityForTree (treeToActivate);
+					}
+
 					//Debug.Log (treeToActivate);
 					if (treeToActivate != Globals.CATCH_IDX) {  // enable the center target only if this is not a catch trial
 						// If not an extinction trial, show the center target
 						if (!Globals.CurrentlyExtinctionTrial ()) {  
 							gos [2].GetComponent<WaterTreeScript> ().Show ();  // Activate center tree
+							if (treeToActivate != 2) {  // if it is not a center trial, log the distractor opacity - otherwise leave it as -1, meaning there is no distractor
+								distractorOpacity = Globals.GetOpacityForTree (2);
+							}
 						}
 						loc = gos [treeToActivate].transform.position;
 						hfreq = gos [treeToActivate].GetComponent<WaterTreeScript> ().GetShaderHFreq ();
@@ -1691,6 +1706,8 @@ public class GameControlScript : MonoBehaviour
         Globals.targetVFreq.Add(vfreq);
 		Globals.targetAngle.Add(angle);
 		Globals.distractorAngle.Add (distractorAngle);
+		Globals.targetOpacity.Add (targetOpacity);
+		Globals.distractorOpacity.Add (distractorOpacity);
 		udpSender.GetComponent<UDPSend> ().OptoTurnOn (optoState);  // Just reuse the last optoState for optogenetic correction trials
 		Globals.optoStates.Add (optoState);
 		Globals.currOptoState = optoState;  // Used to toggle opto state by user
@@ -1800,23 +1817,28 @@ public class GameControlScript : MonoBehaviour
 	}
 		
     private void SetupTreeActivation(GameObject[] gos, int treeToActivate, int maxTrees) {
-		string str = "[";
-
-		List<float> treeOpas = Globals.GetCurrentWorld ().precompOpacityBlock [(int)Math.Ceiling ((double)Globals.numNonCorrectionTrials / Globals.worlds.Count - 1) % Globals.blockSize];
-		int idx = 0;
-		foreach (float f in treeOpas) {
-			str += f.ToString ();
-			if (idx != treeOpas.Count - 1) {
-				str += "/";
+		List<float> treeOpas = null;
+		if (Globals.GetCurrentWorld ().precompOpacityBlock != null) {
+			treeOpas = Globals.GetCurrentWorld ().precompOpacityBlock [(int)Math.Ceiling ((double)Globals.numNonCorrectionTrials / Globals.worlds.Count - 1) % Globals.blockSize];
+			string str = "[";
+			int idx = 0;
+			foreach (float f in treeOpas) {
+				str += f.ToString ();
+				if (idx != treeOpas.Count - 1) {
+					str += "/";
+				}
+				idx++;
 			}
-			idx++;
+			str += "]";
+			Debug.Log (str);
 		}
-		str += "]";
-		Debug.Log (str);
+
 		for (int i = 0; i < maxTrees; i++) {
             gos[i].SetActive(true);
 			gos[i].GetComponent<WaterTreeScript> ().SetCorrect (false);
-			gos[i].GetComponent<WaterTreeScript> ().SetOpacity (Globals.GetOpacityForTree(i));
+			if (treeOpas != null && treeOpas[0] != Globals.CATCH_IDX) {  // Only set the opacity if it is not a catch trial, because on catch trials there are no targets and the opacity value is set to {-1}
+				gos[i].GetComponent<WaterTreeScript> ().SetOpacity (Globals.GetOpacityForTree(i));
+			}
 			//Debug.Log (Globals.GetOpacityForTree (i).ToString ());
 			if (i == treeToActivate) {
 				gos [i].GetComponent<WaterTreeScript> ().SetCorrect (true);

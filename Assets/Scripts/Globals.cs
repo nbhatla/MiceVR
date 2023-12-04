@@ -47,6 +47,8 @@ public static class Globals
 	public static int currOptoState = optoOff;
     public static int numCorrectTurns;
 	public static bool hiddenShown = false;
+	public static List<float> targetOpacity = new List<float> ();
+	public static List<float> distractorOpacity = new List<float> ();
 
 	public static float trialDelay;
 
@@ -816,12 +818,12 @@ public static class Globals
 		}
 	}
 
-    // This function writes out all the statistics to a single file, currently when the game ends.
+    // This function writes out all the statistics to a single file, at the end of each trial.
     public static void InitLogFiles() {
         // overwrite any existing file
         StreamWriter turnsFile = new StreamWriter(PlayerPrefs.GetString("actionFolder") + "/" + mRecorder.GetReplayFileName() + "_actions.txt", false);
         // Write file header
-        turnsFile.WriteLine("#TrialStartTime\tTrialEndTime\tTrialEndFrame\tTrialDur\tTargetLoc\tTargetHFreq\tTargetVFreq\tNasalBound\tTemporalBound\tHighBound\tLowBound\tTurnLocation\tTurnHFreq\tTurnVFreq\tRewardSize(ul)\tWorldNum\tOptoState\tTargetAngle\tTurnAngle\tDistractorAngle\tCorrectionTrial\tExtinctionTrial\tTargetIdx\tTurnIdx");
+        turnsFile.WriteLine("#TrialStartTime\tTrialEndTime\tTrialEndFrame\tTrialDur\tTargetLoc\tTargetHFreq\tTargetVFreq\tNasalBound\tTemporalBound\tHighBound\tLowBound\tTurnLocation\tTurnHFreq\tTurnVFreq\tRewardSize(ul)\tWorldNum\tOptoState\tTargetAngle\tTurnAngle\tDistractorAngle\tCorrectionTrial\tExtinctionTrial\tTargetIdx\tTurnIdx\tTargetOpacity\tDistractorOpacity");
         turnsFile.Close();
     }
 
@@ -852,7 +854,9 @@ public static class Globals
 					correctionTrialMarks[correctionTrialMarks.Count - 1] + "\t" + 
 					extinctionTrialMarks[extinctionTrialMarks.Count - 1] + "\t" + 
 					targetIdx[targetIdx.Count - 1] + "\t" +
-					firstTurnIdx[firstTurnIdx.Count - 1] + "\t");
+					firstTurnIdx[firstTurnIdx.Count - 1] + "\t" +
+					targetOpacity[targetOpacity.Count - 1] + "\t" + 
+					distractorOpacity[distractorOpacity.Count - 1]);
 
 		turnsFile.WriteLine(trialStartTime[trialStartTime.Count - 1].TimeOfDay + "\t" +
 			trialEndTime[trialEndTime.Count - 1].TimeOfDay + "\t" +
@@ -877,7 +881,9 @@ public static class Globals
 			correctionTrialMarks[correctionTrialMarks.Count - 1] + "\t" + 
 			extinctionTrialMarks[extinctionTrialMarks.Count - 1] + "\t" + 
 			targetIdx[targetIdx.Count - 1] + "\t" +
-			firstTurnIdx[firstTurnIdx.Count - 1] + "\t");
+			firstTurnIdx[firstTurnIdx.Count - 1] + "\t" +
+			targetOpacity[targetOpacity.Count - 1] + "\t" + 
+			distractorOpacity[distractorOpacity.Count - 1]);
 
         turnsFile.Close();
         WriteStatsFile();
@@ -1327,7 +1333,9 @@ public static class Globals
 	// Does not yet support multi-worlds
 	public static float GetOpacityForTree(int treeIdx) {
 		float ret = 1;
-		if (Globals.GetCurrentWorld ().precompOpacityBlock != null) {
+		if (treeIdx == Globals.CATCH_IDX) {  // Catch trial, set to 0
+			ret = Globals.CATCH_IDX;
+		} else if (Globals.GetCurrentWorld ().precompOpacityBlock != null) {
 			ret = Globals.GetCurrentWorld ().precompOpacityBlock [(int)Math.Ceiling ((double)Globals.numNonCorrectionTrials / Globals.worlds.Count - 1) % Globals.blockSize] [treeIdx];
 		}
 		return ret;

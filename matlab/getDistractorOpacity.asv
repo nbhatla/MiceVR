@@ -1,0 +1,11 @@
+function distractorOpacity = getDistractorOpacity(trialRecs, trialIdx)
+% Helper function used by lots of code
+
+distractorOpacity = -1;
+if (length(trialRecs) >= 26)
+    distractorOpacity = trialRecs{26}(trialIdx);
+if (~getExtinction(trialRecs, trialIdx))
+    
+distractorOpacity = trialRecs{26}(trialIdx);
+
+end
