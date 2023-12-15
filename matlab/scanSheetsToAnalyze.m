@@ -84,6 +84,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                     end
                 end
             end
+            %disp(lastCompleteTrainingDayStr);
             lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);            
             lastNasalRestrictDeg = str2double(lastNasalRestrictStr);
             % Need this to check and see if the video has already been analyzed
