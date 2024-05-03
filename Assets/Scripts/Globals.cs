@@ -137,6 +137,8 @@ public static class Globals
 	public static bool presoFracSpecified = false;
 	public static float probReward = 1;
 
+	public static float rewardCatch = -1;  // -1 = no, 0 = left reward, 1 = right reward, 2 = straight rewarded
+
 	public static float speedAdjustment = 1;  // Used to adjust speed on a per scenario basis instead of a per-rig basis, so I can have multiple speed mice running at the same time
 
 	public static bool correctionTrialsEnabled = true;  // As of 1/19/19, correction trials are on by default, just like bias correction

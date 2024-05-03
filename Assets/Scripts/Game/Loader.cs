@@ -393,6 +393,10 @@ public class Loader : MonoBehaviour {
 						Globals.presoFracSpecified = false;
 				}
 
+				if (xn["rewardCatch"] != null) {
+					float.TryParse(xn["rewardCatch"].InnerText, out Globals.rewardCatch);
+				}
+
 				if (xn ["probReward"] != null) {  // Specifies probability of reward - normally 1, but can be less than 1 to make mice resilient to errors during blindsight
 					float.TryParse(xn["probReward"].InnerText, out Globals.probReward);
 				}

@@ -151,6 +151,7 @@ public class WaterTreeScript : MonoBehaviour {
 							}
 						}
 					} else if (gameType.Equals ("det_blind")) {
+						Debug.Log (this.idx.ToString ());
 						if (this.idx == 2) {  // The mouse ran into the special center tree - give reward only if no other trees displayed, unless this is a test game
 							bool alone = true;
 							float otherActiveTreeLocX = float.NaN;
@@ -193,7 +194,11 @@ public class WaterTreeScript : MonoBehaviour {
                     }
                 }
             } else {
-                WitholdReward();
+				if (Globals.CurrentlyCatchTrial () && Globals.rewardCatch == this.idx) {  // if rewarding catch trials if collide with disabled target that should be rewarded
+					GiveReward(rewardDur, true, true);
+				} else {
+					WitholdReward ();
+				}
 			}
 		}
     }
