@@ -57,7 +57,9 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
         % First, check to see if the mouse of this sheet is run on the
         % current rig.
         rig = sheet(rigNumRow, rigNumCol);
-        rig = str2double(rig{1}(2:end));  % Remove the leading number sign
+        if (startsWith(rig{1}, '#')) 
+            rig = str2double(rig{1}(2:end));  % Remove the leading number sign
+        end
         mouseName = sheet(mouseNameRow, mouseNameCol);
         mouseName = strtrim(mouseName{1}); % Added strtrm to remove leading and trailing whitespaces, as Kathleen sometimes adds them to the mouseName in the sheet and on the tab - added 2023/11/4 
         if rig == rigNum
@@ -94,7 +96,7 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                 padding = '0';
             end
             vidFileName = [mouseName '_' padding lastCompleteTrainingDayStr '_1.mp4'];
-            % Sometimes a video might be missing, despite training.  Only tracki if it is present.
+            % Sometimes a video might be missing, despite training.  Only track if it is present.
             if (isfile(vidFileName))
                 trackingComplete = [vidFileName(1:end-6) '_trk.mat']; % instead of _opened_ann.mp4, because the video file might be incomplete whereas the trk file is only written when complete!
                 % Only track if the video has not been tracked before
