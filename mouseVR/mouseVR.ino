@@ -6,9 +6,14 @@ const int wallPin = 4;
 const int vPin = 3;  // hack to keep the valve from flickering on program load, which leaks water everywhere
 const int touchPin = 2;
 const int camTrigPin = 5;  // For triggering the cameras pointing to each eye
-const int camGndPin = 9;  // Out of ground pins on Arduino board
+//const int camGndPin = 9;  // Out of ground pins on Arduino board
 const int optoLeftPin = 10;  // Output to turn on optogenetic LED over left cortex
 const int optoRightPin = 11;  // Output to turn on optogenetic LED over right cortex
+
+const int blowerSpeedPin = 9;
+const int BLOWER_ON = 80;
+const int BLOWER_OFF = 0;
+int blowerState = BLOWER_OFF;
 
 // These variables are used to dim the LED off instead of abrupting turning it off
 const int LEFT_LED = 0;
@@ -36,6 +41,10 @@ void setup() {
   pinMode(syncPin, OUTPUT);
   pinMode(wallPin, OUTPUT);
   pinMode(vPin, OUTPUT);
+
+  pinMode(blowerSpeedPin, OUTPUT);
+  analogWrite(blowerSpeedPin, blowerState);
+
   // Disabled at UCB, because it was being triggered by valve actuation, and eventually hung!
   //attachInterrupt(digitalPinToInterrupt(touchPin), sendTouch, FALLING);
 
@@ -43,8 +52,8 @@ void setup() {
   digitalWrite(camTrigPin, LOW);
   //pinMode(camTrigPin2, OUTPUT);
   //digitalWrite(camTrigPin2, LOW);
-  pinMode(camGndPin, OUTPUT);
-  digitalWrite(camGndPin, LOW);
+  //pinMode(camGndPin, OUTPUT);
+  //digitalWrite(camGndPin, LOW);
 
   pinMode(optoLeftPin, OUTPUT);
   pinMode(optoRightPin, OUTPUT);
@@ -58,6 +67,7 @@ void loop() {
   dimOptoLED();
   recvWithEndMarker();
   takeAction();
+  analogWrite(blowerSpeedPin, blowerState);
 }
 
 // One paper dims the optoLED on trials when it is off instead of just abruptly disabling it.  The thinking is that you will get less rebound activity.
@@ -122,8 +132,10 @@ void takeAction() {
       digitalWrite(waterPin, LOW);
       digitalWrite(ledPin, LOW);
     } else if (data == -3) {      // Trigger the cameras
-      //Serial.println("Sent trigger");
+      //Serial.println("Trigger HIGH");
       digitalWrite(camTrigPin, HIGH);
+      //delay(3000);
+      //Serial.println("Trigger LOW");
       digitalWrite(camTrigPin, LOW);
     } else if (data == -4) {    // Turn on optoLeft LED
       //Serial.println("LeftLED!");
@@ -143,6 +155,10 @@ void takeAction() {
         powerDownLeft = dimDur;
         startDimTime = millis();          
       }
+    } else if (data == -8) {   // Turn ON blower on game start
+      blowerState = BLOWER_ON;
+    } else if (data == -9) {   // Turn OFF blower on game end
+      blowerState = BLOWER_OFF;
     } else if (data > 0) {        // Water for data milliseconds
       Serial.println((unsigned long)data);
       digitalWrite(waterPin, HIGH);
