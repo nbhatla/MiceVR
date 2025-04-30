@@ -315,6 +315,10 @@ public class GameControlScript : MonoBehaviour
         this.udpSender.ForceStopSolenoid();
         this.udpSender.setAmount(Globals.rewardDur);
         this.udpSender.CheckReward();
+
+		// Must pause as the serial connection takes some time to settle
+		System.Threading.Thread.Sleep(3000);
+		this.udpSender.SendBlowerOn();
     }
 
     private void CatchKeyStrokes() {
@@ -1877,6 +1881,7 @@ public class GameControlScript : MonoBehaviour
         Debug.Log("Waiting for Q");
         yield return new WaitUntil(() => Input.GetKeyUp(KeyCode.Q));
         Debug.Log("quitting!");
+		this.udpSender.SendBlowerOff();
 		this.udpSender.close();
 
 		if (DateTime.Compare(Globals.gameStartTime, DateTime.MinValue) != 0 && !Globals.mouseName.Equals("")) {  // Only record stats if the game has started and a mouseName was specified, otherwise just exit
