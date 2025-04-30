@@ -140,6 +140,18 @@ public class UDPSend : MonoBehaviour
 		int msg = -3;
 		SendIntMsg(msg);
 	}
+	
+	public void SendBlowerOn() {
+		int msg = -8;
+		SendIntMsg(msg);
+		//Debug.Log("In SendBlowerOn");	
+	}
+
+	public void SendBlowerOff() {
+		int msg = -9;
+		SendIntMsg(msg);		
+		//Debug.Log("In SendBlowerOff");	
+	}
 
 	public void OptoTurnOn (int side) {
 		int msg = 0;
@@ -172,7 +184,7 @@ public class UDPSend : MonoBehaviour
 			if (msg > 0)
 				Debug.Log(msg.ToString());
 		} catch (Exception err) {
-			//Debug.Log(err.ToString());  // fills up debug log when no cameras connected
+			Debug.Log(err.ToString());  // fills up debug log when no cameras connected
 		}
 	}
 
@@ -195,7 +207,6 @@ public class UDPSend : MonoBehaviour
 			return false;
 			Debug.Log(err.ToString());
 		}
-
 	}
 		
     public void SendRunSync() {
