@@ -70,6 +70,9 @@ public class UDPSend : MonoBehaviour
         client = new UdpClient();
         this.usbWriter = new SerialPort(this.USBPort, 2000000);  // Normally this is 9600, but bumped up to 2 Mbps because that solved a camera triggering and not getting water issue.  Now that I am sending \n terminators I think this can be set back to 9600.
 		this.usbWriter.ReadTimeout = 1;
+		//Debug.Log("initialized UDB Sender");
+//		System.Threading.Thread.Sleep(3000);
+//		SendWaterReward(1000);
 		//this.usbWriter.WriteTimeout = 1;
     }
 

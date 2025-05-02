@@ -13,7 +13,7 @@ const int optoRightPin = 11;  // Output to turn on optogenetic LED over right co
 const int blowerSpeedPin = 9;
 const int BLOWER_ON = 80;
 const int BLOWER_OFF = 0;
-int blowerState = BLOWER_OFF;
+int blowerState = BLOWER_ON;
 
 // These variables are used to dim the LED off instead of abrupting turning it off
 const int LEFT_LED = 0;

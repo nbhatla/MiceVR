@@ -312,13 +312,13 @@ public class GameControlScript : MonoBehaviour
 		//Debug.Log ("Init view value: " + _centralViewVisible);
 		//Debug.Log ("Central view shift: " + Globals.centralViewVisibleShift);
         // trying to avoid first drops of water
-        this.udpSender.ForceStopSolenoid();
-        this.udpSender.setAmount(Globals.rewardDur);
-        this.udpSender.CheckReward();
+        //this.udpSender.ForceStopSolenoid();
+        //this.udpSender.setAmount(Globals.rewardDur);
+        //this.udpSender.CheckReward();
 
 		// Must pause as the serial connection takes some time to settle
-		System.Threading.Thread.Sleep(3000);
-		this.udpSender.SendBlowerOn();
+		//System.Threading.Thread.Sleep(3000);
+		this.udpSender.SendBlowerOn();  // Blower is always on, but leave in as fixes bug where first U did not give reward
     }
 
     private void CatchKeyStrokes() {
@@ -1881,7 +1881,7 @@ public class GameControlScript : MonoBehaviour
         Debug.Log("Waiting for Q");
         yield return new WaitUntil(() => Input.GetKeyUp(KeyCode.Q));
         Debug.Log("quitting!");
-		this.udpSender.SendBlowerOff();
+		//this.udpSender.SendBlowerOff();
 		this.udpSender.close();
 
 		if (DateTime.Compare(Globals.gameStartTime, DateTime.MinValue) != 0 && !Globals.mouseName.Equals("")) {  // Only record stats if the game has started and a mouseName was specified, otherwise just exit

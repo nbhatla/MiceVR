@@ -10,12 +10,12 @@ public class IntroScript : MonoBehaviour {
 	public void Awake()
 	{
 		// This sequence is necessary to initiate the connection, which will reset the arduino
-        this.udpSender.ForceStopSolenoid();
-        this.udpSender.CheckReward();  // DO NOT DELETE - without this, the BlowerOn command fails
+        //this.udpSender.ForceStopSolenoid();
+        //this.udpSender.CheckReward();  // DO NOT DELETE - without this, the BlowerOn command fails
 
 		// Arduino reset needs time to settle before it can respond to commands
-		System.Threading.Thread.Sleep(3000);
-		this.udpSender.SendBlowerOn();
+		//System.Threading.Thread.Sleep(3000);
+		//this.udpSender.SendBlowerOn();
 	}
 
 	public void LoadGenerator()
