@@ -72,7 +72,7 @@ void loop() {
   int potVal = analogRead(A5) >> 2;  // This bit shift converts from 10-bit raw to 8-bit scaled value
   analogWrite(blowerSpeedPin, potVal);
 }
-1qqqqqxsq
+
 // One paper dims the optoLED on trials when it is off instead of just abruptly disabling it.  The thinking is that you will get less rebound activity.
 // So far this does not seem to make a difference in my experiments, but leave it in as it doesn't cost us much.
 void dimOptoLED() {
