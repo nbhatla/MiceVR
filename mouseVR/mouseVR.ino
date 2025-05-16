@@ -10,10 +10,10 @@ const int camTrigPin = 5;  // For triggering the cameras pointing to each eye
 const int optoLeftPin = 10;  // Output to turn on optogenetic LED over left cortex
 const int optoRightPin = 11;  // Output to turn on optogenetic LED over right cortex
 
-const int blowerSpeedPin = 9;
-const int BLOWER_ON = 80;
-const int BLOWER_OFF = 0;
-int blowerState = BLOWER_ON;
+const int blowerSpeedPin = 9;  // PWM output to blower - controlled by A5 which is fed from a POT
+//const int BLOWER_ON = 80;
+//const int BLOWER_OFF = 0;
+//int blowerState = BLOWER_ON;
 
 // These variables are used to dim the LED off instead of abrupting turning it off
 const int LEFT_LED = 0;
@@ -43,7 +43,8 @@ void setup() {
   pinMode(vPin, OUTPUT);
 
   pinMode(blowerSpeedPin, OUTPUT);
-  analogWrite(blowerSpeedPin, blowerState);
+  int potVal = analogRead(A5) >> 2;  // This bit shift converts from 10-bit raw to 8-bit scaled value
+  analogWrite(blowerSpeedPin, potVal);
 
   // Disabled at UCB, because it was being triggered by valve actuation, and eventually hung!
   //attachInterrupt(digitalPinToInterrupt(touchPin), sendTouch, FALLING);
@@ -67,9 +68,11 @@ void loop() {
   dimOptoLED();
   recvWithEndMarker();
   takeAction();
-  analogWrite(blowerSpeedPin, blowerState);
+  // analogWrite(blowerSpeedPin, blowerState)
+  int potVal = analogRead(A5) >> 2;  // This bit shift converts from 10-bit raw to 8-bit scaled value
+  analogWrite(blowerSpeedPin, potVal);
 }
-
+1qqqqqxsq
 // One paper dims the optoLED on trials when it is off instead of just abruptly disabling it.  The thinking is that you will get less rebound activity.
 // So far this does not seem to make a difference in my experiments, but leave it in as it doesn't cost us much.
 void dimOptoLED() {
@@ -155,10 +158,10 @@ void takeAction() {
         powerDownLeft = dimDur;
         startDimTime = millis();          
       }
-    } else if (data == -8) {   // Turn ON blower on game start
-      blowerState = BLOWER_ON;
-    } else if (data == -9) {   // Turn OFF blower on game end
-      blowerState = BLOWER_OFF;
+    //} else if (data == -8) {   // Turn ON blower on game start
+    //  blowerState = BLOWER_ON;
+    //} else if (data == -9) {   // Turn OFF blower on game end
+    //  blowerState = BLOWER_OFF;
     } else if (data > 0) {        // Water for data milliseconds
       Serial.println((unsigned long)data);
       digitalWrite(waterPin, HIGH);
