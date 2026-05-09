@@ -36,3 +36,4 @@ sysinfo.txt
 *.apk
 *.unitypackage
 matlab/scanSheetsToAnalyze.m
+Assets/Google Sheets to Unity/Resources/GSTU_Config.asset
