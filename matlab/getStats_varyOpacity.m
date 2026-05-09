@@ -1,6 +1,6 @@
 function [normLeftSightRate, normRightSightRate, leftBlindRate, rightBlindRate, ...
     normLeftOnlySightRate, normRightOnlySightRate] = ...
-    getStats(loc, mouseName, days, sessions, sightRate, includeCorrectionTrials, analyzeCensored)
+    getStats_varyOpacity(loc, mouseName, days, sessions, sightRate, includeCorrectionTrials, analyzeCensored)
 % This function will analyze the relevant actions.txt log files and return a set of statistics useful to analyzing 
 % blindness and blindsight, as well as a 2AFC stimulus discrimination task.
 %

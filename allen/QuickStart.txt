@@ -1,0 +1,13 @@
+1) Start Anaconda Shell: Windows Key - Anaconda Power Shell (non-admin OK).  Do not use jupyter notebook in Ubuntu, as it does not have winsound, which my scripts depend on to beep when processing is done.
+
+> jupyter notebook &
+
+2) Pasted printed localhost link with token into web browser
+
+e.g. http://localhost:8889/tree?token=587353597e85d6158b72d6bb7f031eb56d3b06038c80b851
+
+3) Navigate to /IAM/RESEARCH/AllenData/notebooks
+
+4) Use Shift-Enter to execute code blocks
+
+5) 

@@ -1,5 +1,5 @@
 function [normLeftSightRate, normRightSightRate, leftBlindRate, rightBlindRate, ...
-    normLeftOnlySightRate, normRightOnlySightRate] = ...
+    normLeftOnlySightRate, normRightOnlySightRate, graphPad] = ...
     getStats(loc, mouseName, days, sessions, sightRate, includeCorrectionTrials, analyzeCensored)
 % This function will analyze the relevant actions.txt log files and return a set of statistics useful to analyzing 
 % blindness and blindsight, as well as a 2AFC stimulus discrimination task.
@@ -14,6 +14,11 @@ function [normLeftSightRate, normRightSightRate, leftBlindRate, rightBlindRate, 
 % or -1,-1,-1 stim location.
 %
 % sightRate is a rate from 0 to 1 for how often the mouse was sighted on 3-choice, to calculate chance rates on 4-choice
+%
+% This script also collects the latencies (durations) of each trial type in
+% the worldResults{1}{4} object, accessible within the script before
+% ending. Set a break point at the end to access.
+
 
 actionsFolderLocal = '.\';
 actionsFolderUCB = getPathActionsFolder();
@@ -56,10 +61,12 @@ results_2choice = zeros(2,2,4);
 results_2choice_catch = zeros(2,1,4);  % No target presented in these results for "catch" trials
 durations_2choice = cell(2,2,4);
 
-results_3choice = zeros(3,3,4);
+results_3choice = zeros(3,3,4); % what are the 4 conditions?  no opto, left opto, and right opto!
 results_3choice_catch = zeros(3,1,4);
 results_3choice_extinction = zeros(3,3,4);
 durations_3choice = cell(3,3,4);
+durations_3choice_catch = cell(3,1,4);
+durations_3choice_extinction = cell(3,2,4);
 
 results_4choice = zeros(4,4,4);
 results_4choice_catch = zeros(4,1,4);
@@ -69,6 +76,8 @@ durations_4choice = cell(4,4,4);
 % Haven't tested in a while - might not work any more
 results_disc = zeros(2,2,4);
 results_disc_catch = zeros(2,2,4);
+
+total_num_trials = 0; % Used to count total number of trials mouse ran in this session
 
 % For 3-choice perimetry, which was too difficult for the mice to learn so I no longer use it.  This analysis script still supports it.
 leftStimStraightErrorsMap = containers.Map();
@@ -128,10 +137,12 @@ for i=1:length(fileList)
                                worldResults{w_i}{3} = durations_2choice;
                             elseif (worldTypes(w_i) == 3)
                                worldResults{w_i} = cell(4,1);
-                               worldResults{w_i}{1} = results_3choice;
+                               worldResults{w_i}{1} = results_3choice;  % these are just matrices - they don't contain data
                                worldResults{w_i}{2} = results_3choice_catch;
                                worldResults{w_i}{3} = results_3choice_extinction;
                                worldResults{w_i}{4} = durations_3choice;
+                               worldResults{w_i}{5} = durations_3choice_catch;
+                               worldResults{w_i}{6} = durations_3choice_extinction;
                             elseif (worldTypes(w_i) == 4)
                                worldResults{w_i} = cell(4,1);
                                worldResults{w_i}{1} = results_4choice;
@@ -223,13 +234,13 @@ for i=1:length(fileList)
                                 worldResults{worldIdx+1}{1}(row, col, optoLoc + 2) = ...
                                     worldResults{worldIdx+1}{1}(row, col, optoLoc + 2) + 1;
                                 worldResults{worldIdx+1}{3}{row, col, optoLoc + 2} = ...
-                                    [worldResults{worldIdx+1}{3}{row, col, optoLoc + 2} dur];
+                                    [worldResults{worldIdx+1}{3}{row, col, optoLoc + 2} dur];  % 2-choice
                             else
                                 worldResults{worldIdx+1}{2}(row, 1, optoLoc + 2) = ...
                                     worldResults{worldIdx+1}{2}(row, 1, optoLoc + 2) + 1;
                             end
                             
-                        elseif (worldTypes(worldIdx+1) == 3)
+                        elseif (worldTypes(worldIdx+1) == 3)  % 3-choice!
                             if (~isnan(stimIdx))  % works with new trialRecs post 6/29/20
                                 if (stimIdx == catchIdx)
                                     currCatch = 1;
@@ -264,18 +275,22 @@ for i=1:length(fileList)
                                 end
                             end
                                                         
-                            % Record trial in the correct sheet
+                            % Record trial in the correct sheet, 3-choice!
                             if (currCatch)
                                 worldResults{worldIdx+1}{2}(row, 1, optoLoc + 2) = ...
                                     worldResults{worldIdx+1}{2}(row, 1, optoLoc + 2) + 1;
+                                worldResults{worldIdx+1}{5}{row, 1, optoLoc + 2} = ...
+                                    [worldResults{worldIdx+1}{5}{row, 1, optoLoc + 2} dur]; % 3-choice!
                             elseif (isExtinctionTrial)
                                 worldResults{worldIdx+1}{3}(row, col, optoLoc + 2) = ...
                                     worldResults{worldIdx+1}{3}(row, col, optoLoc + 2) + 1;
+                                worldResults{worldIdx+1}{6}{row, col, optoLoc + 2} = ...
+                                    [worldResults{worldIdx+1}{6}{row, col, optoLoc + 2} dur]; % 3-choice!
                             else
                                 worldResults{worldIdx+1}{1}(row, col, optoLoc + 2) = ...
                                     worldResults{worldIdx+1}{1}(row, col, optoLoc + 2) + 1;
                                 worldResults{worldIdx+1}{4}{row, col, optoLoc + 2} = ...
-                                    [worldResults{worldIdx+1}{4}{row, col, optoLoc + 2} dur];
+                                    [worldResults{worldIdx+1}{4}{row, col, optoLoc + 2} dur]; % 3-choice
                             end
                             
                         elseif (worldTypes(worldIdx+1) == 4)
@@ -390,6 +405,7 @@ end
 graphPad = [];
 graphPadL = [];
 graphPadR = [];
+graphPad_latencies = [];
 ca1 = 0;
 ca2 = 0;
 ca3 = 0;
@@ -551,6 +567,9 @@ for (worldIdx = 1:length(worldTypes))
     elseif (worldTypes(worldIdx) == 3)
         disp('///////3-CHOICE///////');
         results = worldResults{worldIdx}{1};  % just a helper
+        latencies = worldResults{worldIdx}{4};
+        latencies_extinction = worldResults{worldIdx}{6};
+        latencies_catch = worldResults{worldIdx}{5};
 
         for j = 1:size(results,3)
             % Don't display results if none for this opto-type
@@ -603,38 +622,53 @@ for (worldIdx = 1:length(worldTypes))
                 label9 = 'S-S';
             end
             res1 = str2double(num2str(round(results(1,1,j) / sum(results(:,1,j)) * 100), 3));
+            lat1 = round(mean(latencies{1,1}), 1);
             numLeftCorrect = results(1,1,j);
-            disp([label1 ' = ' num2str(res1) '% (' num2str(results(1,1,j)) '/' num2str(sum(results(:,1,j))) ')']);
-            
+            disp([label1 ' = ' num2str(res1) '% (' num2str(results(1,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat1) 's]']);
+
             res2 = str2double(num2str(round(results(2,1,j) / sum(results(:,1,j)) * 100), 3));
-            disp([label2 ' = ' num2str(res2) '% (' num2str(results(2,1,j)) '/' num2str(sum(results(:,1,j))) ')']);
+            lat2 = round(mean(latencies{2,1}), 1);
+            disp([label2 ' = ' num2str(res2) '% (' num2str(results(2,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat2) 's]']);
             
             res3 = str2double(num2str(round(results(3,1,j) / sum(results(:,1,j)) * 100), 3));
-            disp([label3 ' = ' num2str(res3) '% (' num2str(results(3,1,j)) '/' num2str(sum(results(:,1,j))) ')']);
-            disp('-----------')
+            lat3 = round(mean(latencies{3,1}), 1);
+            disp([label3 ' = ' num2str(res3) '% (' num2str(results(3,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat3) 's]']);
+
             totalLeft = sum(results(:,1,j));
+            total_num_trials = total_num_trials + totalLeft;  % Add all LC trials
+            disp('-----------')
 
             res4 = str2double(num2str(round(results(1,2,j) / sum(results(:,2,j)) * 100), 3));
-            disp([label4 ' = ' num2str(res4) '% (' num2str(results(1,2,j)) '/' num2str(sum(results(:,2,j))) ')']);
+            lat4 = round(mean(latencies{1,2}), 1);
+            disp([label4 ' = ' num2str(res4) '% (' num2str(results(1,2,j)) '/' num2str(sum(results(:,2,j))) ') ' char(9) '- [' num2str(lat4) 's]']);
             
             res5 = str2double(num2str(round(results(2,2,j) / sum(results(:,2,j)) * 100), 3));
+            lat5 = round(mean(latencies{2,2}), 1);
             numRightCorrect = results(2,2,j);
-            disp([label5 ' = ' num2str(res5) '% (' num2str(results(2,2,j)) '/' num2str(sum(results(:,2,j))) ')']);
+            disp([label5 ' = ' num2str(res5) '% (' num2str(results(2,2,j)) '/' num2str(sum(results(:,2,j))) ') ' char(9) '- [' num2str(lat5) 's]']);
             
-            res6 = str2double(num2str(round(results(3,2,j) / sum(results(:,2,j)) * 100), 3));            
-            disp([label6 ' = ' num2str(res6) '% (' num2str(results(3,2,j)) '/' num2str(sum(results(:,2,j))) ')']);
-            disp('-----------')
-            totalRight = sum(results(:,2,j));
+            res6 = str2double(num2str(round(results(3,2,j) / sum(results(:,2,j)) * 100), 3));
+            lat6 = round(mean(latencies{3,2}), 1);
+            disp([label6 ' = ' num2str(res6) '% (' num2str(results(3,2,j)) '/' num2str(sum(results(:,2,j))) ') ' char(9) '- [' num2str(lat6) 's]']);
 
+            totalRight = sum(results(:,2,j));
+            total_num_trials = total_num_trials + totalRight;  % Add all RC trials
+            disp('-----------')
+            
             res7 = str2double(num2str(round(results(1,3,j) / sum(results(:,3,j)) * 100), 3));
-            disp([label7 ' = ' num2str(res7) '% (' num2str(results(1,3,j)) '/' num2str(sum(results(:,3,j))) ')']);
+            lat7 = round(mean(latencies{1,3}), 1);
+            disp([label7 ' = ' num2str(res7) '% (' num2str(results(1,3,j)) '/' num2str(sum(results(:,3,j))) ') ' char(9) '- [' num2str(lat7) 's]']);
 
             res8 = str2double(num2str(round(results(2,3,j) / sum(results(:,3,j)) * 100), 3));
-            disp([label8 ' = ' num2str(res8) '% (' num2str(results(2,3,j)) '/' num2str(sum(results(:,3,j))) ')']);
+            lat8 = round(mean(latencies{2,3}), 1);
+            disp([label8 ' = ' num2str(res8) '% (' num2str(results(2,3,j)) '/' num2str(sum(results(:,3,j))) ') ' char(9) '- [' num2str(lat8) 's]']);
             
             res9 = str2double(num2str(round(results(3,3,j) / sum(results(:,3,j)) * 100), 3));
-            disp([label9 ' = ' num2str(res9) '% (' num2str(results(3,3,j)) '/' num2str(sum(results(:,3,j))) ')']);
+            lat9 = round(mean(latencies{3,3}), 1);
+            disp([label9 ' = ' num2str(res9) '% (' num2str(results(3,3,j)) '/' num2str(sum(results(:,3,j))) ') ' char(9) '- [' num2str(lat9) 's]']);
+
             totalCenter = sum(results(:,3,j));
+            total_num_trials = total_num_trials + totalCenter;  % Add all CO trials
 
             disp('-----------')
             disp([num2str(round(results(1,1,j) / sum(results(:,1,j)) * 100), 3) '/' ...
@@ -672,13 +706,14 @@ for (worldIdx = 1:length(worldTypes))
             end
             
             graphPad = [graphPad res1 res2 res3 res4 res5 res6 res7 res8 res9];
+            graphPad_latencies = [graphPad_latencies lat1 lat2 lat3 lat4 lat5 lat6 lat7 lat8 lat9];
         end
 
         disp([num2str(round(results(3,2,2) / sum(results(:,2,2)) * 100), 3) '/' ...
               num2str(round(results(3,1,3) / sum(results(:,1,3)) * 100), 3) ' BLIND (opto)']);
 
         % If there were some extinction trials, print out results
-        resultsExt = worldResults{worldIdx}{3};  % just a helper - these are the catch trials
+        resultsExt = worldResults{worldIdx}{3};  % just a helper - these are the RO and LO trials
         if (sum(sum(sum(resultsExt))) > 0)
             disp('///////3-CHOICE UNILATERAL EXTINCTION///////');
             for j = 1:size(resultsExt,3)
@@ -722,27 +757,37 @@ for (worldIdx = 1:length(worldTypes))
                 end
                 
                 res1 = str2double(num2str(round(resultsExt(1,1,j) / sum(resultsExt(:,1,j)) * 100), 3));
-                disp([label1 ' = ' num2str(res1) '% (' num2str(resultsExt(1,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ')']);
+                lat1 = round(mean(latencies_extinction{1,1}), 1);
+                disp([label1 ' = ' num2str(res1) '% (' num2str(resultsExt(1,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ') ' char(9) '- [' num2str(lat1) 's]']);
                 
                 res2 = str2double(num2str(round(resultsExt(2,1,j) / sum(resultsExt(:,1,j)) * 100), 3));
-                disp([label2 ' = ' num2str(res2) '% (' num2str(resultsExt(2,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ')']);
+                lat2 = round(mean(latencies_extinction{2,1}), 1);
+                disp([label2 ' = ' num2str(res2) '% (' num2str(resultsExt(2,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ') ' char(9) '- [' num2str(lat2) 's]']);
 
                 res3 = str2double(num2str(round(resultsExt(3,1,j) / sum(resultsExt(:,1,j)) * 100), 3));
-                disp([label3 ' = ' num2str(res3) '% (' num2str(resultsExt(3,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ')']);
+                lat3 = round(mean(latencies_extinction{3,1}), 1);
+                disp([label3 ' = ' num2str(res3) '% (' num2str(resultsExt(3,1,j)) '/' num2str(sum(resultsExt(:,1,j))) ') ' char(9) '- [' num2str(lat3) 's]']);
+
+                total_num_trials = total_num_trials + sum(resultsExt(:,1,j));  % Add all LO trials
                 disp('-----------')
 
                 res4 = str2double(num2str(round(resultsExt(1,2,j) / sum(resultsExt(:,2,j)) * 100), 3));
-                disp([label4 ' = ' num2str(res4) '% (' num2str(resultsExt(1,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ')']);
+                lat4 = round(mean(latencies_extinction{1,2}), 1);
+                disp([label4 ' = ' num2str(res4) '% (' num2str(resultsExt(1,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ') ' char(9) '- [' num2str(lat4) 's]']);
                 
                 res5 = str2double(num2str(round(resultsExt(2,2,j) / sum(resultsExt(:,2,j)) * 100), 3));
-                disp([label5 ' = ' num2str(res5) '% (' num2str(resultsExt(2,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ')']);
+                lat5 = round(mean(latencies_extinction{2,2}), 1);
+                disp([label5 ' = ' num2str(res5) '% (' num2str(resultsExt(2,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ') ' char(9) '- [' num2str(lat5) 's]']);
                 
                 res6 = str2double(num2str(round(resultsExt(3,2,j) / sum(resultsExt(:,2,j)) * 100), 3));
-                disp([label6 ' = ' num2str(res6) '% (' ...
-                                 num2str(resultsExt(3,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ')']);
+                lat6 = round(mean(latencies_extinction{3,2}), 1);
+                disp([label6 ' = ' num2str(res6) '% (' num2str(resultsExt(3,2,j)) '/' num2str(sum(resultsExt(:,2,j))) ') ' char(9) '- [' num2str(lat6) 's]']);
+
+                total_num_trials = total_num_trials + sum(resultsExt(:,2,j));  % Add all RO trials                
                 disp('-----------')
                 
                 graphPad = [graphPad res1 res2 res3 res4 res5 res6];
+                graphPad_latencies = [graphPad_latencies lat1 lat2 lat3 lat4 lat5 lat6];
             end
         end
 
@@ -781,13 +826,18 @@ for (worldIdx = 1:length(worldTypes))
                 end
                 
                 res1 = str2double(num2str(round(results(1,1,j) / sum(results(:,1,j)) * 100), 3));
-                disp([label1 ' BIAS = ' num2str(res1) '% (' num2str(results(1,1,j)) '/' num2str(sum(results(:,1,j))) ')']);
+                lat1 = round(mean(latencies_catch{1}), 1);
+                disp([label1 ' BIAS = ' num2str(res1) '% (' num2str(results(1,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat1) 's]']);
                 
                 res2 = str2double(num2str(round(results(2,1,j) / sum(results(:,1,j)) * 100), 3));
-                disp([label2 ' BIAS = ' num2str(res2) '% (' num2str(results(2,1,j)) '/' num2str(sum(results(:,1,j))) ')']);
+                lat2 = round(mean(latencies_catch{2}), 1);
+                disp([label2 ' BIAS = ' num2str(res2) '% (' num2str(results(2,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat2) 's]']);
                 
                 res3 = str2double(num2str(round(results(3,1,j) / sum(results(:,1,j)) * 100), 3));
-                disp([label3 ' BIAS = ' num2str(res3) '% (' num2str(results(3,1,j)) '/' num2str(sum(results(:,1,j))) ')']);            
+                lat3 = round(mean(latencies_catch{3}), 1);
+                disp([label3 ' BIAS = ' num2str(res3) '% (' num2str(results(3,1,j)) '/' num2str(sum(results(:,1,j))) ') ' char(9) '- [' num2str(lat3) 's]']);
+
+                total_num_trials = total_num_trials + sum(resultsExt(:,1,j));  % Add all BLANK trials                
                 disp('-----------')
 
                 % Special calculations for 3F level
@@ -846,6 +896,7 @@ for (worldIdx = 1:length(worldTypes))
                 %}
                                         
                 graphPad = [graphPad res1 res2 res3];
+                graphPad_latencies = [graphPad_latencies lat1 lat2 lat3];
             end
             
             % Summary stats to cut and paste into the sheet
@@ -863,6 +914,11 @@ for (worldIdx = 1:length(worldTypes))
         end
         
         disp(graphPad);
+        % Subtract 2 seconds, because that is how long the screen is frozen
+        % at the start of each trial and the mouse cannot actually move
+        % through the world.
+        fprintf('%.1f\t', graphPad_latencies - 2);
+        fprintf('\n\n');
 
     elseif (worldTypes(worldIdx) == 4)
         disp('///////4-CHOICE///////');
@@ -1119,6 +1175,8 @@ if (sum(sum(sum(results_disc))) > 0)
     end
 end
 
+disp(['Total trial count = ' num2str(total_num_trials)]);
+
 disp(['Expected ' num2str(length(days)) ' files.']);
 disp(['Analyzed ' num2str(numFilesAnalyzed) ' files.']);
 if (length(days) ~= numFilesAnalyzed)
@@ -1127,5 +1185,14 @@ if (length(days) ~= numFilesAnalyzed)
 else
     disp (['ALL GOOD']);
 end
+
+
+% To copy the transpose of a vector into a Google Sheet, for example, you
+% can do the following:
+% > worldResults{1}{4}{3,3}'; clipboard('copy', sprintf('%g\n', ans))
+% That copies the CO->C reaction times to the clipboard to be pasted into a
+% Sheet!
+% > worldResults{1}{6}{1,1}'; disp(ans); clipboard('copy', sprintf('%g\n', ans))
+% That one displays and copies to the clipboard the LO-L completion times.
 
 end
