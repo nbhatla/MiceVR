@@ -56,7 +56,7 @@ public static class Globals
 
     public static int rewardDur;  // duration in ms of a single drop
     public static float rewardSize;  // what the above duration results in in ul
-    public static float totalRewardSize = 1000;  // total amount the mouse can be given, in ul
+    public static float totalRewardSize = 500;  // total amount the mouse can be given, in ul
 	public static ArrayList sizeOfRewardGiven = new ArrayList(); // in ul
 
     public static string gameType = "detection";  // Default: detection - The type of game, as specified in the scenario file and detected by Loader
