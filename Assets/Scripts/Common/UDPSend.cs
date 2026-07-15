@@ -143,6 +143,16 @@ public class UDPSend : MonoBehaviour
 		int msg = -3;
 		SendIntMsg(msg);
 	}
+
+	public void OpenSolenoid() {
+		int msg = 0;
+		SendIntMsg(msg);		
+	}
+
+	public void CloseSolenoid() {
+		int msg = -2;
+		SendIntMsg(msg);		
+	}
 	
 	public void SendBlowerOn() {
 		int msg = -8;

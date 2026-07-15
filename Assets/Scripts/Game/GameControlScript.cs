@@ -337,8 +337,14 @@ public class GameControlScript : MonoBehaviour
 				Debug.Log ("gave reward = " + Globals.rewardAmountSoFar);
 			} else if (Input.GetKeyUp (KeyCode.F)) {
 				int flushDur = Globals.rewardDur * 1000;
-				this.udpSender.SendWaterReward (flushDur);  // Should flush line about 40 ml
+				this.udpSender.SendWaterReward (flushDur);  // Should flush line about 4 ml
 				Debug.Log ("Flushing line, opening for " + flushDur / 1000 / 60 + " min" );
+			} else if (Input.GetKeyUp (KeyCode.D)) {
+				this.udpSender.OpenSolenoid();
+				Debug.Log ("Opened valve for draining and flushing.");
+			} else if (Input.GetKeyUp (KeyCode.C)) {
+				this.udpSender.CloseSolenoid();
+				Debug.Log ("Closed valve.");
 			} else if (Input.GetKeyUp (KeyCode.T)) {
 				TeleportToBeginning ();
 			} else if (Input.GetKeyUp (KeyCode.B)) {

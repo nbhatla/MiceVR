@@ -127,10 +127,13 @@ void takeAction() {
     long data = receivedStr.toInt();
     if ( data == 0 ) {  // sync msg - inherited, not sure what this was used for but it is not currently used
       //Serial.println("Ard:Synced!");
-      digitalWrite(syncPin, HIGH);
+      //digitalWrite(syncPin, HIGH);
+      // Use this command to force open the solenoid!
+      digitalWrite(waterPin, HIGH);
+      digitalWrite(ledPin, HIGH);
     } else if ( data == -1 ) {    // wall collision - not used
       digitalWrite(wallPin, HIGH);
-    } else if (data == -2) {      // ForceStopSolenoid - not used
+    } else if (data == -2) {      // ForceStopSolenoid - used for flushing
       //Serial.println("ForceStopped!");       
       digitalWrite(waterPin, LOW);
       digitalWrite(ledPin, LOW);
