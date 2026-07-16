@@ -23,6 +23,10 @@ public class UDPSend : MonoBehaviour
     private string singleFlush;
 
 	private char msgTerminator = '\n';
+	
+	private const bool VALVE_CLOSED = false;
+	private const bool VALVE_OPEN = true;
+	private bool valveState = VALVE_CLOSED; // water valve starts off closed
 
     // start from unity3d
     void Awake() {
@@ -144,13 +148,23 @@ public class UDPSend : MonoBehaviour
 		SendIntMsg(msg);
 	}
 
-	public void OpenSolenoid() {
+	public void ToggleRewardValve() {
+		if (valveState == VALVE_CLOSED) {
+			OpenRewardValve();
+		} else {
+			CloseRewardValve();
+		}
+	}
+	
+	public void OpenRewardValve() {
 		int msg = 0;
-		SendIntMsg(msg);		
+		valveState = VALVE_OPEN;
+		SendIntMsg(msg);
 	}
 
-	public void CloseSolenoid() {
+	public void CloseRewardValve() {
 		int msg = -2;
+		valveState = VALVE_CLOSED;
 		SendIntMsg(msg);		
 	}
 	
@@ -167,15 +181,15 @@ public class UDPSend : MonoBehaviour
 	}
 
 	public void OptoTurnOn (int side) {
-		int msg = 0;
+		int msg = -2;
 		if (side == Globals.optoOff) {
 			Debug.Log ("Turned on opto " + side);
 			return;
-		} else if (side == 0) { // left side
+		} else if (side == Globals.optoL) { // left side
 			msg = -4;
-		} else if (side == 1) { // right side
+		} else if (side == Globals.optoR) { // right side
 			msg = -5;
-		} else if (side == 2) { // both sides
+		} else if (side == Globals.optoLandR) { // both sides
 			msg = -6;
 		}
 		SendIntMsg(msg);
@@ -222,6 +236,7 @@ public class UDPSend : MonoBehaviour
 		}
 	}
 		
+	// 2026-07-16 - This isn't used for anything but still called by the code...
     public void SendRunSync() {
         int msg = 1;
         try {
@@ -231,7 +246,7 @@ public class UDPSend : MonoBehaviour
             if (!usbWriter.IsOpen)
                 usbWriter.Open();
 
-			usbWriter.Write("0" + msgTerminator);
+			usbWriter.Write("-2" + msgTerminator);
             //usbWriter.Close();
         } catch (Exception err) {
             //Debug.Log(err.ToString());  // Fills up the log when no hardware connected to testing laptop
@@ -326,7 +341,7 @@ public class UDPSend : MonoBehaviour
             if (!usbWriter.IsOpen)
                 usbWriter.Open();
 
-			usbWriter.Write("0" + msgTerminator);
+			usbWriter.Write("-2" + msgTerminator);
             usbWriter.Close();
         }  catch (Exception) {
             Debug.Log("com port failed");
