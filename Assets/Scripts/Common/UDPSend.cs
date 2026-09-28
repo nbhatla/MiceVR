@@ -31,6 +31,7 @@ public class UDPSend : MonoBehaviour
     // start from unity3d
     void Awake() {
         init();
+		//Debug.Log("Initializing Arduino connection");
     }
 
     // init
@@ -74,6 +75,7 @@ public class UDPSend : MonoBehaviour
         client = new UdpClient();
         this.usbWriter = new SerialPort(this.USBPort, 2000000);  // Normally this is 9600, but bumped up to 2 Mbps because that solved a camera triggering and not getting water issue.  Now that I am sending \n terminators I think this can be set back to 9600.
 		this.usbWriter.ReadTimeout = 1;
+		//this.usbWriter.Open();
 		//Debug.Log("initialized UDB Sender");
 //		System.Threading.Thread.Sleep(3000);
 //		SendWaterReward(1000);
@@ -146,6 +148,7 @@ public class UDPSend : MonoBehaviour
 	public void SendFrameTrigger() {
 		int msg = -3;
 		SendIntMsg(msg);
+		//Debug.Log("Sent frame trigger");
 	}
 
 	public void ToggleRewardValve() {
