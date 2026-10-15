@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
-  <configuration build-checksum="4223659584" file="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam\MouseCamIAM.prj" location="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam" name="MouseCamIAM" preferred-package-location="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam\MouseCamIAM\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="Application Compiler">
+  <configuration build-checksum="1788563316" file="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam\MouseCamIAM.prj" location="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam" name="MouseCamIAM" preferred-package-location="C:\Users\IAM\Documents\GitHub\MiceVR\matlab\MouseCam\MouseCamIAM\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="Application Compiler">
     <param.appname>MouseCamIAM</param.appname>
     <param.icon>${PROJECT_ROOT}\MouseCamIAM_resources\icon.ico</param.icon>
     <param.icons>
@@ -8,7 +8,7 @@
       <file>${PROJECT_ROOT}\MouseCamIAM_resources\icon_24.png</file>
       <file>${PROJECT_ROOT}\MouseCamIAM_resources\icon_16.png</file>
     </param.icons>
-    <param.version>1.0</param.version>
+    <param.version>1.1</param.version>
     <param.authnamewatermark>Nikhil Bhatla</param.authnamewatermark>
     <param.email />
     <param.company>Institute for All Minds</param.company>
@@ -45,7 +45,6 @@
     <param.example />
     <param.help.text />
     <unset>
-      <param.version />
       <param.email />
       <param.summary />
       <param.guid />
@@ -97,6 +96,8 @@
     </fileset.resources>
     <fileset.package />
     <fileset.depfun>
+      <file>C:\Users\IAM\Documents\GitHub\MiceVR\matlab\getPathConfigFolder.m</file>
+      <file>C:\Users\IAM\Documents\GitHub\MiceVR\matlab\getPathRootFolder.m</file>
       <file>C:\Users\IAM\Documents\GitHub\MiceVR\matlab\GetSheetIDs.m</file>
       <file>C:\Users\IAM\Documents\GitHub\MiceVR\matlab\lib\GetGoogleSpreadsheet\GetGoogleSpreadsheet.m</file>
       <file>C:\Users\IAM\Documents\GitHub\MiceVR\matlab\logTrialMarks.m</file>
