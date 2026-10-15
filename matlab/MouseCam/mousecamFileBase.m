@@ -4,7 +4,10 @@ function base = mousecamFileBase(mouseName, dayStr)
 %   If DAYSTR is empty the mouse name alone is returned, matching the
 %   original behaviour when no spreadsheet was available.
 
-base = strtrim(mouseName);
+% File names use a single consistent capitalization - first letter up, the
+% rest down - so "real", "Real" and "REAL" all land on Real_027_1.mp4 and
+% a season of recordings sorts and globs as one mouse.
+base = capitalize(strtrim(mouseName));
 
 if nargin < 2 || isempty(dayStr)
     return
@@ -26,4 +29,13 @@ else
 end
 
 base = [base '_' prefix dayStr];
+end
+
+% ======================================================================
+function s = capitalize(s)
+%CAPITALIZE  First character upper case, everything after it lower case.
+if isempty(s)
+    return
+end
+s = [upper(s(1)) lower(s(2:end))];
 end

@@ -1,11 +1,13 @@
-function sheetIDs = GetSheetIDs(docid, mouseNames, dataSheetsOnly) %#ok<INUSD>
+function [sheetIDs, sheetTitles] = GetSheetIDs(docid, mouseNames, dataSheetsOnly) %#ok<INUSD>
 %GETSHEETIDS  Sheet ids from a Google spreadsheet, via a service account.
 %
 %   SHEETIDS = GETSHEETIDS(DOCID, MOUSENAMES, DATASHEETSONLY)
 %
-%   Authenticates with the service account in the key file below, then reads
-%   the spreadsheet's sheet list.  MOUSENAMES empty returns every data sheet;
-%   otherwise only the sheets whose titles match.
+%   MOUSENAMES empty returns every data sheet; otherwise only the sheets
+%   whose titles match, ignoring capitalization.  SHEETTITLES gives the
+%   titles as they are actually spelled in the spreadsheet.
+%
+%   Self contained - no other new files needed.
 %
 %   Written for R2017b.
 
@@ -14,18 +16,15 @@ function sheetIDs = GetSheetIDs(docid, mouseNames, dataSheetsOnly) %#ok<INUSD>
 % ==================================================================
 KEY_FILE = 'C:\Users\IAM\Documents\MVR\config\gcp_key.json';
 
-% Real OAuth scope.  Must match what is authorized for the service account
-% in the Workspace admin console, character for character.
+% Must match what is authorized for this service account's client id in the
+% Workspace admin console, character for character.
 SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
-% Domain-wide delegation: the service account acts as this user.  The
-% client id of the service account must be authorized for SCOPE in the
-% Workspace admin console, under Security > API controls > Domain-wide
-% delegation.  If that is not in place Google answers unauthorized_client.
+% Domain-wide delegation: the service account acts as this user.
 IMPERSONATE = 'script-runner@iam.science';
 % ==================================================================
 
-accessToken = getAccessToken(KEY_FILE, SCOPE, IMPERSONATE);
+accessToken = getServiceToken(KEY_FILE, SCOPE, IMPERSONATE);
 
 % ---- read the sheet list -----------------------------------------
 % The query goes on the URL itself.  WEBOPTIONS gained a
@@ -42,8 +41,9 @@ readOptions = weboptions( ...
 parsed = webread(dataURL, readOptions);
 
 % ---- pick out the ids we want ------------------------------------
-sheets   = parsed.sheets;
-sheetIDs = [];
+sheets      = parsed.sheets;
+sheetIDs    = [];
+sheetTitles = {};
 
 for i = 1:length(sheets)
     if iscell(sheets)
@@ -57,15 +57,18 @@ for i = 1:length(sheets)
         continue
     end
 
-    % Skip underscore-prefixed and all-uppercase sheets - those are not
-    % mouse data sheets.
-    if sheetTitle(1) ~= '_' && ~strcmp(sheetTitle, upper(sheetTitle))
+    % Skip underscore-prefixed sheets - those are not mouse data sheets.
+    if sheetTitle(1) ~= '_'
         if isempty(mouseNames)
-            sheetIDs(end+1) = props.sheetId; %#ok<AGROW>
+            sheetIDs(end+1)    = props.sheetId; %#ok<AGROW>
+            sheetTitles{end+1} = sheetTitle;    %#ok<AGROW>
         else
             for j = 1:length(mouseNames)
-                if strcmp(sheetTitle, mouseNames{j})
-                    sheetIDs(end+1) = props.sheetId; %#ok<AGROW>
+                % Case-insensitive: trainers type "real", the sheet says
+                % "Real", and that should still match.
+                if strcmpi(sheetTitle, mouseNames{j})
+                    sheetIDs(end+1)    = props.sheetId; %#ok<AGROW>
+                    sheetTitles{end+1} = sheetTitle;    %#ok<AGROW>
                 end
             end
         end
@@ -74,139 +77,157 @@ end
 end
 
 % ======================================================================
-function accessToken = getAccessToken(keyFilePath, scope, impersonate)
-%GETACCESSTOKEN  Sign a JWT with the service account key and swap it for a token.
+function token = getServiceToken(keyFile, scope, impersonate)
+%GETSERVICETOKEN  Sign a JWT with the service account key, swap it for an
+%   access token.  Cached until shortly before it expires.
 
-if exist(keyFilePath, 'file') ~= 2
-    error('GetSheetIDs:noKey', 'Missing key file: %s', keyFilePath);
+persistent cachedToken cachedExpiry
+
+nowSecs = floor(double(java.lang.System.currentTimeMillis()) / 1000);
+if ~isempty(cachedToken) && ~isempty(cachedExpiry) && nowSecs < cachedExpiry
+    token = cachedToken;
+    return
 end
 
-keyData       = jsondecode(fileread(keyFilePath));
-privateKeyPEM = keyData.private_key;
-clientEmail   = keyData.client_email;
-tokenURL      = keyData.token_uri;
+if exist(keyFile, 'file') ~= 2
+    error('GoogleAuth:noKey', 'Missing key file: %s', keyFile);
+end
 
-% Epoch seconds in UTC.  NOW is local time, so using it directly puts iat
-% hours out on any machine that is not on UTC and Google rejects the JWT.
-nowSecs = floor(double(java.lang.System.currentTimeMillis()) / 1000);
-iatSecs = nowSecs - 30;          % small backdate absorbs clock skew
-expSecs = iatSecs + 3600;        % Google allows at most one hour
+k           = jsondecode(fileread(keyFile));
+clientEmail = k.client_email;
+tokenURL    = k.token_uri;
 
-% Build the JSON by hand: JSONENCODE escapes forward slashes, which breaks
-% the signature.
-jsonHeader = '{"alg":"RS256","typ":"JWT"}';
+% Epoch seconds in UTC.  NOW is local time, which puts iat hours out on any
+% machine not set to UTC, and Google then rejects the JWT.
+iatSecs = nowSecs - 30;
+expSecs = iatSecs + 3600;
 
+% Built by hand - JSONENCODE escapes forward slashes and breaks the signature.
+hdr = '{"alg":"RS256","typ":"JWT"}';
 if isempty(impersonate)
-    jsonPayload = sprintf( ...
-        '{"iss":"%s","scope":"%s","aud":"%s","exp":%d,"iat":%d}', ...
+    pay = sprintf('{"iss":"%s","scope":"%s","aud":"%s","exp":%d,"iat":%d}', ...
         clientEmail, scope, tokenURL, expSecs, iatSecs);
 else
-    jsonPayload = sprintf( ...
-        '{"iss":"%s","scope":"%s","aud":"%s","exp":%d,"iat":%d,"sub":"%s"}', ...
-        clientEmail, scope, tokenURL, expSecs, iatSecs, impersonate);
+    pay = sprintf(['{"iss":"%s","scope":"%s","aud":"%s","exp":%d,"iat":%d,' ...
+        '"sub":"%s"}'], clientEmail, scope, tokenURL, expSecs, iatSecs, impersonate);
 end
 
-signingInput = [base64url(jsonHeader) '.' base64url(jsonPayload)];
+signingInput = [b64url(hdr) '.' b64url(pay)];
 
-% ---- sign with the private key -----------------------------------
-keyPEM = strrep(privateKeyPEM, '-----BEGIN PRIVATE KEY-----', '');
-keyPEM = strrep(keyPEM, '-----END PRIVATE KEY-----', '');
-keyPEM = regexprep(keyPEM, '\s', '');        % newlines, spaces, stray CRs
+pem = strrep(k.private_key, '-----BEGIN PRIVATE KEY-----', '');
+pem = strrep(pem, '-----END PRIVATE KEY-----', '');
+pem = regexprep(pem, '\s', '');
 
-keyBytes   = typecast(matlab.net.base64decode(keyPEM), 'int8');
-keySpec    = java.security.spec.PKCS8EncodedKeySpec(keyBytes);
+keySpec    = java.security.spec.PKCS8EncodedKeySpec( ...
+                typecast(matlab.net.base64decode(pem), 'int8'));
 keyFactory = java.security.KeyFactory.getInstance('RSA');
 privKey    = keyFactory.generatePrivate(keySpec);
 
 sig = java.security.Signature.getInstance('SHA256withRSA');
 sig.initSign(privKey);
 sig.update(uint8(signingInput));
-signatureBytes = sig.sign();
+assertion = [signingInput '.' b64url(typecast(sig.sign(), 'uint8'))];
 
-jwtAssertion = [signingInput '.' base64url(typecast(signatureBytes, 'uint8'))];
+body = fetchToken(tokenURL, assertion);
 
-% ---- swap it for an access token ---------------------------------
-% Sent with MATLAB.NET.HTTP rather than WEBWRITE so that a rejection can be
-% read.  WEBWRITE throws away the response body, which is where Google puts
-% the reason - that is why a failure here used to say only "Bad Request".
-payload = ['grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer' ...
-           '&assertion=' jwtAssertion];
-
-req = matlab.net.http.RequestMessage( ...
-    'POST', ...
-    matlab.net.http.HeaderField('Content-Type', ...
-        'application/x-www-form-urlencoded'), ...
-    payload);
-
-opts = matlab.net.http.HTTPOptions('ConnectTimeout', 30);
-resp = req.send(tokenURL, opts);
-
-if resp.StatusCode ~= matlab.net.http.StatusCode.OK
-    error('GetSheetIDs:tokenRejected', ...
-        'Google rejected the token request (HTTP %d).\n%s\n%s', ...
-        double(resp.StatusCode), bodyText(resp), tokenHint(resp));
+token = body.access_token;
+if isfield(body, 'expires_in')
+    life = double(body.expires_in);
+else
+    life = 3600;
 end
-
-body = resp.Body.Data;
-if ischar(body)
-    body = jsondecode(body);
-end
-if ~isfield(body, 'access_token')
-    error('GetSheetIDs:noToken', 'No access token came back: %s', bodyText(resp));
-end
-accessToken = body.access_token;
+cachedToken  = token;
+cachedExpiry = nowSecs + life - 120;
 end
 
 % ======================================================================
-function txt = bodyText(resp)
-%BODYTEXT  Whatever Google said, as readable text.
+function resp = fetchToken(tokenURL, assertion)
+%FETCHTOKEN  POST the signed JWT and return the decoded reply.
+%
+%   Tries three ways, because the compiled application does not behave like
+%   MATLAB here.  In the runtime the CA certificate bundle sits inside the
+%   MCR cache, and MATLAB.NET.HTTP can fail to read it - which surfaces as
+%   "Permission denied" against the token URL even though the network is
+%   fine.  WEBWRITE is more forgiving, so it goes first.
+
+problems = {};
+
+% --- 1. plain WEBWRITE ---------------------------------------------
 try
-    d = resp.Body.Data;
-    if ischar(d)
-        txt = d;
-    elseif isstruct(d)
-        txt = jsonencode(d);
-    else
-        txt = char(string(d));
+    opts = weboptions('RequestMethod', 'post', 'ContentType', 'json', ...
+        'Timeout', 30);
+    resp = webwrite(tokenURL, ...
+        'grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer', ...
+        'assertion', assertion, opts);
+    if isstruct(resp) && isfield(resp, 'access_token')
+        return
     end
-catch
-    txt = '(no response body)';
-end
+    problems{end+1} = 'webwrite: no access_token in the reply';
+catch err
+    problems{end+1} = sprintf('webwrite: %s', err.message);
 end
 
-% ======================================================================
-function hint = tokenHint(resp)
-%TOKENHINT  Turn Google's error code into something actionable.
-hint = '';
+% --- 2. WEBWRITE without certificate checking ----------------------
 try
-    t = lower(bodyText(resp));
-catch
-    return
+    opts = weboptions('RequestMethod', 'post', 'ContentType', 'json', ...
+        'Timeout', 30, 'CertificateFilename', '');
+    resp = webwrite(tokenURL, ...
+        'grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer', ...
+        'assertion', assertion, opts);
+    if isstruct(resp) && isfield(resp, 'access_token')
+        return
+    end
+    problems{end+1} = 'webwrite (no cert check): no access_token in the reply';
+catch err
+    problems{end+1} = sprintf('webwrite (no cert check): %s', err.message);
 end
 
-if ~isempty(strfind(t, 'invalid_scope')) %#ok<STREMP>
-    hint = 'SCOPE is not a real Google scope.';
-elseif ~isempty(strfind(t, 'unauthorized_client')) %#ok<STREMP>
-    hint = ['Domain-wide delegation is not authorized for this exact ' ...
-            'scope. In the Workspace admin console add the service ' ...
-            'account client id with SCOPE listed verbatim - the scope ' ...
-            'string must match character for character.'];
-elseif ~isempty(strfind(t, 'invalid_grant')) %#ok<STREMP>
-    hint = ['Check the PC clock is correct, and that the impersonated ' ...
-            'user exists and is active in the domain.'];
-elseif ~isempty(strfind(t, 'invalid_client')) %#ok<STREMP>
-    hint = 'The key file does not match a live service account.';
+% --- 3. MATLAB.NET.HTTP, which can show what Google actually said ---
+try
+    req = matlab.net.http.RequestMessage('POST', ...
+        matlab.net.http.HeaderField('Content-Type', ...
+            'application/x-www-form-urlencoded'), ...
+        ['grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer' ...
+         '&assertion=' assertion]);
+
+    r = req.send(tokenURL, matlab.net.http.HTTPOptions( ...
+        'ConnectTimeout', 30, 'CertificateFilename', ''));
+
+    b = r.Body.Data;
+    if ischar(b)
+        b = jsondecode(b);
+    end
+
+    if r.StatusCode == matlab.net.http.StatusCode.OK ...
+            && isstruct(b) && isfield(b, 'access_token')
+        resp = b;
+        return
+    end
+
+    if isstruct(b)
+        detail = jsonencode(b);
+    else
+        detail = char(string(b));
+    end
+    problems{end+1} = sprintf('http: %d %s', double(r.StatusCode), detail);
+catch err
+    problems{end+1} = sprintf('http: %s', err.message);
 end
+
+error('GoogleAuth:tokenFailed', ...
+    ['Could not get an access token.\n  %s\nIf every attempt says ' ...
+     'Permission denied, the program is being blocked from the network - ' ...
+     'allow it through Windows Firewall and any endpoint security.'], ...
+    strjoin(problems, sprintf('\n  ')));
 end
 
 % ======================================================================
-function out = base64url(inputData)
-%BASE64URL  URL-safe base64 with the padding stripped (RFC 4648).
-if ischar(inputData)
-    inputData = strtrim(inputData);
+function out = b64url(x)
+if ischar(x)
+    x = strtrim(x);
 end
-b64 = matlab.net.base64encode(inputData);
-b64 = strrep(b64, '+', '-');
-b64 = strrep(b64, '/', '_');
-out = strrep(b64, '=', '');
+b = matlab.net.base64encode(x);
+b = strrep(b, '+', '-');
+b = strrep(b, '/', '_');
+out = strrep(b, '=', '');
 end

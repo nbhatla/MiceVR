@@ -8,6 +8,7 @@ config/
 replays/
 actions/
 matlab/getPath*
+matlab/MouseCam/MouseCamIAM/
 ProjectSettings/ProjectSettings.asset
 ProjectSettings/ProjectVersion.txt
 
@@ -36,5 +37,7 @@ sysinfo.txt
 *.apk
 *.unitypackage
 matlab/scanSheetsToAnalyze.m
+Assets/Google Sheets to Unity/Resources/GSTU_Config.asset
+*.asset
 Assets/Google Sheets to Unity/Resources/GSTU_Config.asset
 *.asset

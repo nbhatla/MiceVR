@@ -109,9 +109,13 @@ hRecord = uicontrol(pCtrl, 'Style', 'pushbutton', 'String', 'Start Recording', .
     'FontWeight', 'bold', 'Position', [10 4 140 26], ...
     'Callback', @onStartRecording, 'Enable', 'off');
 
+hStop = uicontrol(pCtrl, 'Style', 'pushbutton', 'String', 'Stop Recording', ...
+    'FontWeight', 'bold', 'Position', [158 4 140 26], ...
+    'Callback', @onStopRecording, 'Enable', 'off');
+
 hStatus = uicontrol(pCtrl, 'Style', 'text', 'String', 'Starting...', ...
     'HorizontalAlignment', 'left', 'FontWeight', 'bold', ...
-    'Position', [158 8 190 18]);
+    'Position', [221 34 128 20]);
 
 % ---- right of the band: the log, three lines tall -----------------
 hLog = uicontrol(pCtrl, 'Style', 'listbox', 'String', {}, ...
@@ -264,10 +268,17 @@ autoStart();
         % on the same name starts the recording, so the whole thing is
         % name, Enter, Enter without reaching for the mouse.
         mouseName = strtrim(get(hMouse, 'String'));
-        refreshFileLabel();
         if isempty(mouseName)
+            refreshFileLabel();
             return
         end
+
+        % Show the name exactly as it will be written to disk.  Asking
+        % MOUSECAMFILEBASE with no day keeps the box and the file names
+        % using one rule rather than two that could drift apart.
+        mouseName = mousecamFileBase(mouseName, '');
+        set(hMouse, 'String', mouseName);
+        refreshFileLabel();
 
         if strcmp(mouseName, st.lookedUp)
             onStartRecording();
@@ -275,10 +286,19 @@ autoStart();
         end
 
         setBusy(true, 'Reading Google Sheet...');
-        [dayStr, msg] = mousecamGetDay(st.docidFile, mouseName, cfg.dayColumn);
+        [dayStr, msg, canonicalName] = mousecamGetDay(st.docidFile, mouseName, ...
+                                                      cfg.dayColumn);
         if ~isempty(dayStr)
             set(hDay, 'String', dayStr);
         end
+
+        % Take the spelling from the spreadsheet, put through the same
+        % capitalization rule as the file names.
+        if ~isempty(canonicalName)
+            mouseName = mousecamFileBase(canonicalName, '');
+            set(hMouse, 'String', mouseName);
+        end
+
         logmsg('%s', msg);
 
         st.lookedUp = mouseName;
@@ -398,7 +418,7 @@ autoStart();
             st.state = 'recording';
             startTicker();
             logmsg('WAITING FOR HARDWARE TRIGGER.');
-            logmsg('Close this window when the session is over.');
+            logmsg('Press Stop Recording when this mouse is done.');
         catch err
             logmsg('ERROR: %s', err.message);
             safeCleanup();
@@ -406,6 +426,43 @@ autoStart();
         end
         setBusy(false);
         updateUI();
+    end
+
+    function onStopRecording(~, ~)
+        if ~strcmp(st.state, 'recording')
+            return
+        end
+        finalizeRecording();
+        resetForNextMouse();
+    end
+
+    function resetForNextMouse()
+        % Release the cameras, then bring them straight back up so the
+        % previews are live for the next mouse.  The app stays open.
+        setBusy(true, 'Resetting for next mouse...');
+        try
+            safeCleanup();
+
+            set(hMouse, 'String', '');
+            set(hDay,   'String', '');
+            set(hCounts, 'String', '');
+            st.lookedUp = '';
+            st.base     = '';
+
+            createCameras();
+            resolveCameraChoice();
+            startPreviews();
+
+            st.state = 'preview';
+            logmsg('Ready for the next mouse.');
+        catch err
+            logmsg('ERROR bringing the cameras back: %s', err.message);
+            st.state = 'idle';
+        end
+        refreshFileLabel();
+        setBusy(false);
+        updateUI();
+        focusMouseName();
     end
 
     function finalizeRecording()
@@ -550,6 +607,10 @@ autoStart();
         end
         st.rightCam = otherCamera(st.leftCam, cfg.numCams);
 
+        % Remember it in the running app too, so the next mouse in this
+        % session keeps the same eye assignment.
+        st.savedLeftID = st.camID{st.leftCam};
+
         set(hPick(1), 'String', st.camLabel, 'Value', st.leftCam);
         set(hPick(2), 'String', st.camLabel, 'Value', st.rightCam);
 
@@ -566,6 +627,7 @@ autoStart();
             end
             v   = st.vid{k};
             roi = get(v, 'ROIPosition');
+            cla(ax(k));
             st.himg{k} = image(zeros(roi(4), roi(3), 'uint8'), 'Parent', ax(k));
             axis(ax(k), 'image');
             set(ax(k), 'XTick', [], 'YTick', [], 'Box', 'on', 'Visible', 'on');
@@ -751,6 +813,7 @@ autoStart();
         haveName = ~isempty(strtrim(get(hMouse, 'String')));
 
         set(hRecord,  'Enable', onoff(isPrev && haveName));
+        set(hStop,    'Enable', onoff(isRec));
         set(hMouse,   'Enable', onoff(isPrev));
         set(hDay,     'Enable', onoff(isPrev));
         set(hPick(1), 'Enable', onoff(isPrev));
@@ -763,6 +826,7 @@ autoStart();
             set(hRecord, 'String', 'Recording...');
         elseif isPrev
             set(hStatus, 'String', 'Preview', 'ForegroundColor', [0 0.4 0]);
+            set(hRecord, 'String', 'Start Recording');
         else
             set(hStatus, 'String', 'Not running', 'ForegroundColor', [0.6 0 0]);
         end

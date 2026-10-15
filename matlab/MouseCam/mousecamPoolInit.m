@@ -17,14 +17,33 @@ end
 % Deployed applications must be told explicitly to use the local scheduler.
 parallel.defaultClusterProfile('local');
 
+% A pool with the default 30 minute idle timeout is a hazard here.  The
+% worker sits idle between mice, and during a recording it is idle too -
+% it issues START and returns, while the camera acquires in the
+% background.  If the pool times out the right eye camera goes with it.
+IDLE_TIMEOUT = Inf;         % minutes; Inf means never shut down
+
 p = gcp('nocreate');
-if ~isempty(p) && p.NumWorkers ~= numSlaves
+if ~isempty(p) && (p.NumWorkers ~= numSlaves || ~isNoTimeout(p, IDLE_TIMEOUT))
     delete(p);
     p = [];
 end
+
 if isempty(p)
     c = parcluster('local');
-    p = parpool(c, numSlaves);
+    try
+        p = parpool(c, numSlaves, 'IdleTimeout', IDLE_TIMEOUT);
+    catch
+        % Some releases will not take Inf - fall back to a long finite one.
+        try
+            p = parpool(c, numSlaves, 'IdleTimeout', 1440);   % 24 hours
+        catch
+            p = parpool(c, numSlaves);
+            warning('mousecam:idleTimeout', ...
+                ['Could not disable the pool idle timeout. Do not leave ' ...
+                 'the app idle for long between recordings.']);
+        end
+    end
 end
 n = p.NumWorkers;
 

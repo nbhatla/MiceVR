@@ -26,7 +26,7 @@ others = {'mousecamConfig', 'mousecamCheckAdaptor', 'mousecamCameraIdentity', ..
           'mousecamPoolInit', ...
           'mousecamSlaveStart', 'mousecamSlaveStop', 'mousecamSlaveCleanup', ...
           'mousecamGetDay', 'mousecamFileBase', 'mousecamSaveSession', ...
-          'logTrialMarks', 'GetGoogleToken', 'GetSheetIDs', 'GetGoogleSpreadsheet'};
+          'logTrialMarks', 'GetSheetIDs', 'GetGoogleSpreadsheet'};
 missing = {};
 for k = 1:numel(others)
     q = which(others{k});
@@ -36,6 +36,11 @@ for k = 1:numel(others)
     else
         fprintf('    %s\n', q);
     end
+end
+
+% Optional: only if the Google auth lives in its own file.
+if ~isempty(which('GetGoogleToken'))
+    fprintf('    %s\n', which('GetGoogleToken'));
 end
 
 % --- camera adaptor ----------------------------------------------------

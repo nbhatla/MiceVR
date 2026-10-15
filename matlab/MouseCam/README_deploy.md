@@ -23,15 +23,20 @@ You supply `logTrialMarks.m`, `GetSheetIDs.m` and `GetGoogleSpreadsheet.m` uncha
 
 ## How it maps onto the original script
 
-The two blocking `input()` prompts become buttons:
+The two blocking `input()` prompts are gone. The app opens with both previews already live, and one launch handles a whole session of mice:
 
 ```
-Connect & Preview  ->  imaqreset, pool start, two-pass camera creation, preview
-Start Recording    ->  old "Press ENTER to stop preview & start PARALLEL recording"
-Stop Recording     ->  old "Press ENTER to stop recording"
+type mouse name, Enter   ->  day pulled from the Google Sheet
+Enter again              ->  old "stop preview & start PARALLEL recording"
+Stop Recording           ->  old "stop recording", then resets for the next mouse
+close the window         ->  finishes any recording in progress, then quits
 ```
 
-Everything else — the binning/ROI reboot workaround, `FramesPerTrigger = 1`, disk logging, `TriggerRepeat = Inf`, hardware trigger on rising edge of Line3/Line0, exposure 14000 µs, MPEG-4 at 60 fps, the `_1`/`_2` filename suffixes, and the `.mat` with `trialStarts`, `trialEnds`, `framesAcquiredLogged` — is byte-for-byte the same behaviour.
+Stop Recording writes the video files and the MAT file, releases both cameras, brings the previews back up and blanks the name and day, with the cursor back in the name box. The eye assignment carries over between mice.
+
+Everything else — the binning/ROI reboot workaround, `FramesPerTrigger = 1`, disk logging, `TriggerRepeat = Inf`, hardware trigger on rising edge of Line3/Line0, exposure from `mousecamConfig`, MPEG-4 at 60 fps, the `_1`/`_2` filename suffixes, and the `.mat` with `trialStarts`, `trialEnds`, `framesAcquiredLogged` — behaves as it did.
+
+`_1` is always the left eye and `_2` always the right, whichever physical camera is assigned to each.
 
 ## Deliberate changes, and why
 

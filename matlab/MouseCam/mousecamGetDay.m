@@ -1,4 +1,4 @@
-function [dayStr, msg] = mousecamGetDay(docidFile, mouseName, dayColumn)
+function [dayStr, msg, canonicalName] = mousecamGetDay(docidFile, mouseName, dayColumn)
 %MOUSECAMGETDAY  Read the last completed day for a mouse from the Google Sheet.
 %
 %   [DAYSTR, MSG] = MOUSECAMGETDAY(DOCIDFILE, MOUSENAME, DAYCOLUMN)
@@ -7,8 +7,9 @@ function [dayStr, msg] = mousecamGetDay(docidFile, mouseName, dayColumn)
 %   human readable status message.  This function never throws: the GUI shows
 %   MSG and lets the trainer type the day in by hand instead.
 
-dayStr = '';
-msg    = '';
+dayStr        = '';
+msg           = '';
+canonicalName = '';   % the name as the spreadsheet spells it
 
 if nargin < 3 || isempty(dayColumn)
     dayColumn = 1;
@@ -46,7 +47,29 @@ try
         return
     end
 
-    sheetID = GetSheetIDs(docid, {mouseName}, 1);   % data sheets only
+    % Ask for the matched titles too, so the name can be corrected to the
+    % spelling used in the sheet.  Older copies of GetSheetIDs only return
+    % the ids, so fall back if that is what is installed.
+    sheetTitles = {};
+    try
+        [sheetID, sheetTitles] = GetSheetIDs(docid, {mouseName}, 1);
+    catch
+        sheetID = GetSheetIDs(docid, {mouseName}, 1);
+    end
+
+    % No match is a normal outcome - a new mouse, or a typo.  Say which,
+    % rather than letting the spreadsheet reader fail on an empty id.
+    if isempty(sheetID)
+        msg = sprintf(['No sheet named "%s" in the spreadsheet. Check the ' ...
+                       'spelling, or type the day in by hand.'], mouseName);
+        return
+    end
+    if numel(sheetID) > 1
+        msg = sprintf(['%d sheets are named "%s". Type the day in by hand.'], ...
+                      numel(sheetID), mouseName);
+        return
+    end
+
     sheet   = GetGoogleSpreadsheet(docid, sheetID);
 
     lastDay = '';
@@ -63,7 +86,17 @@ try
     end
 
     dayStr = lastDay;
-    msg    = sprintf('Day %s read from Google Sheet.', dayStr);
+
+    if ~isempty(sheetTitles)
+        canonicalName = sheetTitles{1};
+    end
+
+    if ~isempty(canonicalName) && ~strcmp(canonicalName, mouseName)
+        msg = sprintf('Day %s read from Google Sheet (name corrected to "%s").', ...
+                      dayStr, canonicalName);
+    else
+        msg = sprintf('Day %s read from Google Sheet.', dayStr);
+    end
 
 catch err
     if fid >= 0
