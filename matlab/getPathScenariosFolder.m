@@ -1,3 +1,3 @@
 function scenariosFolder = getPathScenariosFolder()
-    scenariosFolder = 'C:\Users\IAM\Documents\MVR\scenarios\';
+    scenariosFolder = [getPathRootFolder() 'scenarios\'];
 end

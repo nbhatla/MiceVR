@@ -1,3 +1,3 @@
 function replaysFolder = getPathReplaysFolder()
-    replaysFolder = 'C:\Users\IAM\Documents\MVR\replays\';
+    replaysFolder = [getPathRootFolder() 'replays\'];
 end

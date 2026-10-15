@@ -7,7 +7,7 @@
 config/
 replays/
 actions/
-matlab/getPath*
+#matlab/getPath*
 matlab/MouseCam/MouseCamIAM/
 ProjectSettings/ProjectSettings.asset
 ProjectSettings/ProjectVersion.txt
