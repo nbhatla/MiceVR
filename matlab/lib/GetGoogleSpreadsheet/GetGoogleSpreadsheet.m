@@ -6,34 +6,97 @@ function result = GetGoogleSpreadsheet(docid, gid)
 % [GID]   the sheet id, as returned by GetSheetIDs
 %
 % [result] cell array of the values in the spreadsheet, padded to a
-%          rectangle with empty strings
+%          rectangle with empty strings (at least MIN_COLS wide)
 %
-% The original version downloaded the public CSV export url, which needs
-% the spreadsheet shared with "anyone with the link".  That is no longer
-% allowed here, so this reads through the Sheets API as the service
-% account instead.  Self contained - nothing else changes.
+% Reads through the Sheets API as the service account.
+%
+% Rate limits: Google allows roughly 60 read requests per minute per user.
+% To stay under it, the sheet-id -> title lookup is done once and cached,
+% so each call normally costs a single request.  If Google still answers
+% 429 Too Many Requests (or a temporary 5xx), the request is retried with
+% exponential backoff instead of failing.
 %
 % Written for R2017b.
 
 % ==================================================================
 %  SETTINGS
 % ==================================================================
-KEY_FILE    = 'C:\Users\IAM\Documents\MVR\config\gcp_key.json';
+%KEY_FILE    = 'C:\Users\nikhi\IAM\RESEARCH\GAME\config\gcp_key.json';
+KEY_FILE    = [getPathConfigFolder() 'gcp_key.json'];
 SCOPE       = 'https://www.googleapis.com/auth/spreadsheets';
 IMPERSONATE = 'script-runner@iam.science';
+MIN_COLS    = 28;   % scanSheetsToAnalyze reads column AB (28)
 % ==================================================================
 
 result = {};
 
 token = getToken(KEY_FILE, SCOPE, IMPERSONATE);
 
-% ---- gid -> sheet title ------------------------------------------
-% The values endpoint addresses sheets by name, not by gid.
-meta = webread(sprintf( ...
+% ---- gid -> sheet title (cached) ---------------------------------
+title = sheetTitle(docid, gid, token, false);
+
+% ---- read the cells ----------------------------------------------
+try
+    data = webreadRetry(valuesURL(docid, title), authOpts(token));
+catch ME
+    % A tab renamed since the title was cached gives 400 "Unable to parse
+    % range".  Refresh the titles once and try again.
+    if ~isempty(strfind(ME.message, '400')) %#ok<STREMP>
+        title = sheetTitle(docid, gid, token, true);
+        data  = webreadRetry(valuesURL(docid, title), authOpts(token));
+    else
+        rethrow(ME);
+    end
+end
+
+if isfield(data, 'values') && ~isempty(data.values)
+    result = toCellGrid(data.values);
+end
+
+% Trailing empty columns are not returned by the API; pad so fixed column
+% positions always exist.
+if isempty(result)
+    result = repmat({''}, 1, MIN_COLS);
+elseif size(result, 2) < MIN_COLS
+    result(:, end+1:MIN_COLS) = {''};
+end
+end
+
+% ======================================================================
+function url = valuesURL(docid, title)
+url = sprintf( ...
+    'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s?majorDimension=ROWS', ...
+    docid, pctEncode(quoteRange(title)));
+end
+
+% ======================================================================
+function title = sheetTitle(docid, gid, token, forceRefresh)
+%SHEETTITLE  Title of the sheet with this gid, from a per-spreadsheet cache.
+%   The cache holds every sheet's title after one metadata request, so the
+%   lookup costs nothing for the remaining sheets.
+
+persistent cache    % containers.Map: docid -> containers.Map(gid string -> title)
+
+if isempty(cache)
+    cache = containers.Map('KeyType', 'char', 'ValueType', 'any');
+end
+
+key = sprintf('%d', round(double(gid)));
+
+if ~forceRefresh && isKey(cache, docid)
+    titles = cache(docid);
+    if isKey(titles, key)
+        title = titles(key);
+        return
+    end
+end
+
+% Fetch all sheet titles in one request
+meta = webreadRetry(sprintf( ...
     'https://sheets.googleapis.com/v4/spreadsheets/%s?fields=sheets.properties', ...
     docid), authOpts(token));
 
-title  = '';
+titles = containers.Map('KeyType', 'char', 'ValueType', 'char');
 sheets = meta.sheets;
 for i = 1:numel(sheets)
     if iscell(sheets)
@@ -41,26 +104,51 @@ for i = 1:numel(sheets)
     else
         props = sheets(i).properties;
     end
-    if isfield(props, 'sheetId') && double(props.sheetId) == double(gid)
-        title = props.title;
-        break
+    if isfield(props, 'sheetId') && isfield(props, 'title')
+        titles(sprintf('%d', round(double(props.sheetId)))) = props.title;
     end
 end
-if isempty(title)
+cache(docid) = titles;
+
+if ~isKey(titles, key)
     error('GetGoogleSpreadsheet:noSuchSheet', ...
-        'No sheet with id %s in that spreadsheet.', num2str(gid));
+        'No sheet with id %s in that spreadsheet.', key);
+end
+title = titles(key);
 end
 
-% ---- read the cells ----------------------------------------------
-data = webread(sprintf( ...
-    'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s?majorDimension=ROWS', ...
-    docid, pctEncode(quoteRange(title))), authOpts(token));
+% ======================================================================
+function data = webreadRetry(url, opts)
+%WEBREADRETRY  WEBREAD that waits and retries when Google is rate limiting
+%   (429) or briefly unavailable (500, 502, 503, 504).
+%   Waits 2, 4, 8, 16, 32, 64 s (plus a little jitter) - about two minutes
+%   in total - which is more than enough for the per-minute quota to reset.
 
-if ~isfield(data, 'values') || isempty(data.values)
-    return
+waits = [2 4 8 16 32 64];
+for attempt = 1:numel(waits) + 1
+    try
+        data = webread(url, opts);
+        return
+    catch ME
+        msg = ME.message;
+        retryable = ~isempty(regexp(msg, 'status (429|500|502|503|504)', 'once')) || ...
+                    ~isempty(strfind(msg, 'Too Many Requests')); %#ok<STREMP>
+        if ~retryable || attempt > numel(waits)
+            rethrow(ME);
+        end
+        w = waits(attempt) + rand();
+        fprintf('Google Sheets busy (%s). Retrying in %.0f s...\n', ...
+            firstLine(msg), w);
+        pause(w);
+    end
+end
 end
 
-result = toCellGrid(data.values);
+function s = firstLine(msg)
+s = strtok(msg, sprintf('\n'));
+if numel(s) > 80
+    s = [s(1:77) '...'];
+end
 end
 
 % ======================================================================
@@ -211,27 +299,36 @@ end
 % ======================================================================
 function C = toCellGrid(v)
 %TOCELLGRID  Whatever JSONDECODE returned, as a rectangular cell array of
-%   character strings.  Sheet rows can be ragged, so pad them.
-if isempty(v) || ~iscell(v)
+%   character strings.  Rows can be ragged, and blank rows come back as []
+%   (an empty double, not a cell), so normalise every row first.
+if isempty(v)
     C = {};
     return
 end
+if ~iscell(v)
+    v = {v};
+end
 
-if all(cellfun(@iscell, v(:)))
-    nRows = numel(v);
-    nCols = max(cellfun(@numel, v(:)));
-    C = repmat({''}, nRows, max(nCols, 1));
-    for i = 1:nRows
-        row = v{i};
-        for j = 1:numel(row)
-            C{i, j} = toChar(row{j});
-        end
+rows = cell(numel(v), 1);
+for i = 1:numel(v)
+    r = v{i};
+    if iscell(r)
+        rows{i} = cellfun(@toChar, r(:)', 'UniformOutput', false);
+    elseif ischar(r)
+        rows{i} = {r};                     % row with a single cell of text
+    elseif isempty(r)
+        rows{i} = {};                      % blank row
+    elseif isnumeric(r) || islogical(r)
+        rows{i} = arrayfun(@toChar, r(:)', 'UniformOutput', false);
+    else
+        rows{i} = {''};
     end
-else
-    C = cell(size(v));
-    for i = 1:numel(v)
-        C{i} = toChar(v{i});
-    end
+end
+
+nCols = max([1; cellfun(@numel, rows)]);
+C = repmat({''}, numel(rows), nCols);
+for i = 1:numel(rows)
+    C(i, 1:numel(rows{i})) = rows{i};
 end
 end
 

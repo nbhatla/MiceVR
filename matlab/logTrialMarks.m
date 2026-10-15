@@ -26,7 +26,7 @@ if (lastEventTime == 0) % This is the first frame, so log it as the trial start
 % 3.5 has false positives (1/3 of videos), pausetime 4 is the same, so try higher threshold at pausetime 3?  2.9 had misses and false positives at pausetime 2, so not hopeful...
 % Will write script to fix this data type.
 % At this setting (3.5), observe range of times as low as 3.76x and as high as 5.65x
-elseif (etime(d.AbsTime, lastEventTime) > 1/fps * 4) % was 3.5 at UCB - 5 is too long, 4 might work...
+elseif (etime(d.AbsTime, lastEventTime) > 1/fps * 3.5) % was 3.5 at UCB, tried 4 at IAM, lost some boundaries - 5 is too long
     d.TimeSinceLastEvent = etime(d.AbsTime, lastEventTime);
     %disp(datetime(lastEve, 'ConvertFrom', 'posixtime', 'TimeZone', 'local'));
     %disp(d.AbsTime);

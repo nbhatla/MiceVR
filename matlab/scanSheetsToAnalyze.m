@@ -7,7 +7,7 @@ function scanSheetsToAnalyze(rigNum)
 % and record the results on the sheet, only if that mouse runs on
 % the current rig.
 
-vrGSdocidFileName = '../config/vrGSdocid.txt';
+vrGSdocidFileName = getPathConfigFolder + "vrGSdocid.txt";
 
 dayCol = 1;
 nasalRestrictCol = 4;
@@ -28,7 +28,7 @@ numVideosTracking = 0;
 
 % 6 was the max on my laptop before I got disk IO errors.  Maybe the desktops can do more?  
 % Laptop had 4 physical cores but 8 virtual, but desktop has 6 physical and 6 logical.  So probably 6 is the most.
-maxVideoTracking = 2;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
+maxVideoTracking = 3;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
 numThreads = maxVideoTracking;
 
 futureNum = 0;
@@ -56,12 +56,18 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
         sheet = GetGoogleSpreadsheet(docid, sheetIDs(sheetIdx));
         % First, check to see if the mouse of this sheet is run on the
         % current rig.
-        rig = sheet(rigNumRow, rigNumCol);
+        if (size(sheet, 1) >= rigNumRow && size(sheet, 2) >= rigNumCol)
+            rig = sheet(rigNumRow, rigNumCol);
+        else
+            continue;
+        end
+        
         if (startsWith(rig{1}, '#')) 
             rig = str2double(rig{1}(2:end));  % Remove the leading number sign
         end
         mouseName = sheet(mouseNameRow, mouseNameCol);
         mouseName = strtrim(mouseName{1}); % Added strtrm to remove leading and trailing whitespaces, as Kathleen sometimes adds them to the mouseName in the sheet and on the tab - added 2023/11/4 
+        %disp(mouseName);
         if rig == rigNum
             disp ([mouseName ' is on rig #' num2str(rig)]);
             % Now, find the last complete training day, check and see if it is is n20 or
@@ -86,9 +92,9 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                     end
                 end
             end
-            %disp(lastCompleteTrainingDayStr);
             lastCompleteTrainingDayNum = str2double(lastCompleteTrainingDayStr);            
             lastNasalRestrictDeg = str2double(lastNasalRestrictStr);
+            disp("Day: " + lastCompleteTrainingDayStr + ", N=" + lastNasalRestrictStr);
             % Need this to check and see if the video has already been analyzed
             if (lastCompleteTrainingDayNum < 10)
                 padding = '00';
@@ -113,6 +119,8 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                         tracking(end).day = lastCompleteTrainingDayNum;
                         disp(['Tracking: ' mouseName ' on day ' lastCompleteTrainingDayStr]);
                     end
+                else
+                    disp("No " + vidFileName + " found for this mouse");
                 end
             end
         end

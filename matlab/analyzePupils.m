@@ -20,6 +20,10 @@ function [LeyeKeptLCPct, LeyeKeptLOPct, LeyeKeptRCPct, LeyeKeptROPct, ...
 % By default, average eye movement plots exclude correction and extinction trials
 
 % USAGE:
+%>> analyzePupils('Vex', 32, 5, [], [1 1])
+%>> [ne2 acc] = plotTargetAzimLoc('Vex', [32], [1 0], [], 1, 'R', 0, 1, 1, [0 0], 1, 1, 1, 0, 0, 1);
+
+% USAGE (OLD):
 % >> analyzePupils(['Dragon_229_trk.mat'], 4, [1 0], 1.15, 47, 60, 0)
 
 %leftColor = [1 1 0.79];  % off-yellow

@@ -11,7 +11,7 @@ function cleanUpTrialTimes(videoMetadataFileName)
 % However, sometimes Unity will drop this many frames or more by chance.  In this case,
 % the Matlab video metadata indicating trial boundaries will be wrong.  So this script
 % will compare the logged frame End and start times, which we don't normally use because 
-% they are inaccurate on their own, with the Matlab trial markers.  Even thought
+% they are inaccurate on their own, with the Matlab trial markers.  Even though
 % the actionsFile has the logged frames off by a bit, these can be used to discard
 % matlab trial boundaries that are no where close to those logged in the actionsFile.
 
