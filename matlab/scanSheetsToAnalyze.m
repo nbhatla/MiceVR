@@ -120,8 +120,10 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                         disp(['Tracking: ' mouseName ' on day ' lastCompleteTrainingDayStr]);
                     end
                 else
-                    disp("No " + vidFileName + " found for this mouse");
+                    disp("Tracking already completed for " + mouseName);
                 end
+            else
+                disp("No " + vidFileName + " found for this mouse");                
             end
         end
     end
