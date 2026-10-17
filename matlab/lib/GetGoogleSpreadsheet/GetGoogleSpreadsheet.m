@@ -22,7 +22,7 @@ function result = GetGoogleSpreadsheet(docid, gid)
 %  SETTINGS
 % ==================================================================
 %KEY_FILE    = 'C:\Users\nikhi\IAM\RESEARCH\GAME\config\gcp_key.json';
-KEY_FILE    = [getPathConfigFolder() 'gcp_key.json'];
+KEY_FILE    = char(fullfile(getPathConfigFolder(), 'gcp_key.json'));
 SCOPE       = 'https://www.googleapis.com/auth/spreadsheets';
 IMPERSONATE = 'script-runner@iam.science';
 MIN_COLS    = 28;   % scanSheetsToAnalyze reads column AB (28)

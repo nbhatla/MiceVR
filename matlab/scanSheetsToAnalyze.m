@@ -1,4 +1,4 @@
-function scanSheetsToAnalyze(rigNum)
+function scanSheetsToAnalyze(rigNum, maxVideoTracking)
 % This script runs nightly at midnight as a scheduled task.
 % It will read each sheet in the Google Spreadsheet and decide
 % which analysis to do. To start, it will track and analyze the
@@ -28,7 +28,13 @@ numVideosTracking = 0;
 
 % 6 was the max on my laptop before I got disk IO errors.  Maybe the desktops can do more?  
 % Laptop had 4 physical cores but 8 virtual, but desktop has 6 physical and 6 logical.  So probably 6 is the most.
-maxVideoTracking = 3;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
+%maxVideoTracking = 3;  % 2 gives fewest errors but still errors. Since I added infinite trying in case of error, bump this up to 4
+
+% Number of videos tracked at the same time (parallel workers).
+% Passed in from nightly.bat (THREADS=) via nightlyAnalyze; 3 if not given.
+if nargin < 2 || isempty(maxVideoTracking)
+    maxVideoTracking = 2;
+end
 numThreads = maxVideoTracking;
 
 futureNum = 0;
@@ -152,7 +158,13 @@ if (isfile(vrGSdocidFileName)) % If the docid file exists, use that to find the 
                             [lekl, lekle, lekr, lekre, rekl, rekle, rekr, rekre] = analyzePupils(tracking(i).mouseName, tracking(i).day, rigNum, [], [1 1], 1);
                             sheet = GetGoogleSpreadsheet(docid, tracking(i).sheetID);
                             notes = sheet(tracking(i).row, notesCol);
-                            mat2sheets(docid, num2str(tracking(i).sheetID), [tracking(i).row notesCol], {[num2str(lekl) '/' num2str(lekle) '/' num2str(lekr) '/' num2str(lekre) ' // ' num2str(rekl) '/' num2str(rekle) '/' num2str(rekr) '/' num2str(rekre) ' - ' notes{1}]});
+                            resultStr = [num2str(lekl) '/' num2str(lekle) '/' num2str(lekr) '/' num2str(lekre) ' // ' ...
+                                         num2str(rekl) '/' num2str(rekle) '/' num2str(rekr) '/' num2str(rekre)];
+                            writeSheetCell(docid, tracking(i).sheetID, tracking(i).row, notesCol, [resultStr ' - ' notes{1}]);
+                            disp(['Wrote results to sheet: ' resultStr]);
+                            if isdeployed   % interactive data tips only make sense in MATLAB, not the compiled nightly run
+                                close all force;
+                            end
                             analyzedFuture(i) = 1;
                         catch ME
                             disp(ME.message);

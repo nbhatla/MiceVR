@@ -49,8 +49,9 @@ end
 
 actionsFolder = getPathActionsFolder();
 
-eyeMeasureFileName = 'UCB_mouse_eye_measurements.m';
-run(eyeMeasureFileName);  % Bring those variables into the current workspace
+UCB_mouse_eye_measurements;
+%eyeMeasureFileName = 'UCB_mouse_eye_measurements.m';
+%run(eyeMeasureFileName);  % Bring those variables into the current workspace
 
 leftEyeColor = 'b'; 
 rightEyeColor = 'r';
@@ -1905,9 +1906,11 @@ if (numDays == 1)  % Only plot elevation and azimuth for single days
     % Add catch to legends above?
     ylim([ymin/2 ymax/2]);
     xlim([0 xUnitsTime(end)]);
-    dcmObj = datacursormode(gcf);
-    set(dcmObj,'UpdateFcn',@dataCursorCallback,'Enable','on');
-
+    if ~isdeployed   % interactive data tips only make sense in MATLAB, not the compiled nightly run
+        dcmObj = datacursormode(gcf);
+        set(dcmObj,'UpdateFcn',@dataCursorCallback,'Enable','on');
+    end
+    
     % AZIMUTH PLOT
     figure; hold on
     patch(-yStim, xTrialsUnitsTime, stimPatchColors, 'EdgeColor', 'none');
@@ -1954,9 +1957,10 @@ if (numDays == 1)  % Only plot elevation and azimuth for single days
     % Add catch to legends above?
     xlim([ymin ymax]);
     ylim([0 xUnitsTime(end)]);
-    dcmObj = datacursormode(gcf);
-    set(dcmObj,'UpdateFcn',@dataCursorCallback,'Enable','on');
-    
+    if ~isdeployed   % interactive data tips only make sense in MATLAB, not the compiled nightly run
+        dcmObj = datacursormode(gcf);
+        set(dcmObj,'UpdateFcn',@dataCursorCallback,'Enable','on');
+    end    
 end
 
 

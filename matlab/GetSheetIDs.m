@@ -15,7 +15,7 @@ function [sheetIDs, sheetTitles] = GetSheetIDs(docid, mouseNames, dataSheetsOnly
 %  SETTINGS
 % ==================================================================
 %KEY_FILE    = 'C:\Users\nikhi\IAM\RESEARCH\GAME\config\gcp_key.json';
-KEY_FILE    = [getPathConfigFolder() 'gcp_key.json'];
+KEY_FILE    = char(fullfile(getPathConfigFolder(), 'gcp_key.json'));
 
 % Must match what is authorized for this service account's client id in the
 % Workspace admin console, character for character.
